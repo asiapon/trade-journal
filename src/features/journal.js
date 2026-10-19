@@ -5,7 +5,7 @@ import { NetLog, sjTokenHeaders } from '../core/netlog.js';
 import { StockDict } from '../core/stockdict.js';
 import { DL } from '../core/data-layer.js';
 import { emQuote, txQuote } from '../sources/quotes.js';
-import { TABLES, BACKEND_URL, RPC_BASE, ACCESS_KEY, CLOUD_HOST, rpc, cloudStore, localStore, setStore, loadAll, saveSetting, sessionHooks, storageHooks } from '../storage/gateway.js';
+import { ACCESS_KEY, BACKEND_URL, CLOUD_HOST, RPC_BASE, TABLES, cloudStore, loadAll, localStore, rpc, saveSetting, sessionHooks, setStore, storageHooks, store } from '../storage/gateway.js';
 import { S } from '../core/app-state.js';
 import { U } from '../core/ui-state.js';
 import { cloudLlm } from '../app.js';
