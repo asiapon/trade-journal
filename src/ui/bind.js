@@ -685,68 +685,9 @@ export function bindEvents() {
   });
   $('netLogClearBtn').addEventListener('click', () => { renderNetLogUI(); });
 
-  /* v3.10.1 K线库：统计展示 + 自动同步开关 + 立即同步（设置 → 数据管理） */
-  async function renderKlibStatUI() {
-    const sum = $('klibStatSummary'), daily = $('klibStatDaily');
-    if (!sum) return;
-    /* v3.12.6 自托管：改用服务端「按 K 线交易日」的对账统计（此前按入库日分组，
-       首次回补把 280 天历史全记在回补当天名下，极易误读为数据结构有问题） */
-    const isSelf = !(location.hostname.endsWith('workbuddy.host')) && location.protocol !== 'file:';
-    if (isSelf && S.mode === 'cloud') {
-      sum.textContent = 'K线库（服务端 PostgreSQL）：每只股票一行，bars 数组每天一条 [日期,开,收,高,低,量,额]——按交易日可查任意一天的涨跌幅排名。';
-      daily.innerHTML = '<p class="hint">交易日覆盖统计加载中…</p>';
-      try {
-        const j = await fetch('/api/klib/daily', { headers: sjTokenHeaders() }).then(r => r.json());
-        if (!j.ok) throw new Error(j.msg || '统计失败');
-        const pct = d => j.total ? (d.stocks / j.total * 100).toFixed(1) + '%' : '--';
-        daily.innerHTML = '<div class="table-wrap"><table class="batch-table"><thead><tr>'
-          + '<th>K线交易日</th><th class="num">当日有K线的股票数</th><th class="num">占总票数</th>'
-          + '</tr></thead><tbody>'
-          + j.rows.slice(0, 20).map(r => '<tr><td>' + esc(r.day) + '</td><td class="num">'
-            + Number(r.stocks).toLocaleString('zh-CN') + '</td><td class="num">' + pct(r) + '</td></tr>').join('')
-          + '</tbody></table></div>'
-          + '<p class="hint">结构：每只股票一行（共 ' + j.total.toLocaleString('zh-CN') + ' 行），bars 数组每天一条记录；任意交易日的涨跌幅排名都可以按日期计算。统计缓存 10 分钟。</p>';
-      } catch (e) {
-        daily.innerHTML = '<p class="hint">交易日统计读取失败：' + esc(e.message || e) + '</p>';
-      }
-      return;
-    }
-    const meta = (typeof KLib !== 'undefined') ? await KLib.metaGet().catch(() => ({})) : {};
-    let cloud = null;
-    try { if (typeof KLib !== 'undefined' && S.mode === 'cloud' && S.token) cloud = await KLib.cloudStats(); }
-    catch (e) { cloud = null; }
-    const st = (typeof KLib !== 'undefined') ? KLib.statRows(cloud, meta) : { summary: '—', rows: [] };
-    sum.textContent = st.summary;
-    if (!st.rows.length) { daily.innerHTML = '<p class="hint">云端还没有入库记录。</p>'; return; }
-    daily.innerHTML = '<div class="table-wrap"><table class="batch-table"><thead><tr>'
-      + '<th>交易日</th><th class="num">入库股票数</th><th class="num">K线根数</th><th class="num">覆盖度</th>'
-      + '</tr></thead><tbody>'
-      + st.rows.slice(0, 15).map(r => '<tr><td>' + esc(r.d) + '</td><td class="num">' + r.stocks
-        + '</td><td class="num">' + Number(r.bars).toLocaleString('zh-CN') + '</td><td class="num">'
-        + (r.pct == null ? '--' : r.pct + '%') + '</td></tr>').join('')
-      + '</tbody></table></div>'
-      + (st.rows.length > 15 ? '<p class="hint">仅显示最近 15 个交易日，共 ' + st.rows.length + ' 天有入库记录。</p>' : '');
-  }
-  $('klibAutoChk').checked = (typeof KLib !== 'undefined') ? KLib.autoOn() : true;
-  $('klibAutoChk').addEventListener('change', () => {
-    if (typeof KLib === 'undefined') return;
-    try { localStorage.setItem(KLib.AUTO_KEY, $('klibAutoChk').checked ? '1' : '0'); } catch (e) { /* */ }
-    toast($('klibAutoChk').checked ? '已开启：打开应用时自动增量同步' : '已关闭自动同步');
-  });
-  $('klibSyncBtn').addEventListener('click', async () => {
-    if (typeof KLib === 'undefined') return toast('K线库模块未加载');
-    const btn = $('klibSyncBtn');
-    btn.disabled = true; btn.textContent = '⏳ 同步中…';
-    try {
-      const r = await KLib.ensure(p => { btn.textContent = '⏳ ' + (p.stage || '同步中…').slice(0, 12); });
-      toast('K线库已同步：' + r.n + ' 只 · 最新 ' + r.targetDate + (r.failed ? '（失败 ' + r.failed + '）' : ''));
-    } catch (e) { toast('同步失败：' + (e && e.message || e)); }
-    btn.disabled = false; btn.textContent = '🔄 立即同步';
-    renderKlibStatUI();
-  });
-  /* 首次渲染必须等 kline-store.js 加载完（它在 app.js 之后执行）——同步调用时 KLib 必然
-     还是 undefined，摘要会落进 '—' 分支且再无重渲染时机，所以用宏任务推迟 */
-  setTimeout(renderKlibStatUI, 50);
+  /* v3.18.2 K线库卡已并入静态数据中心卡（日K行「更新」= KLib.ensure，重复入口删除），
+     原 renderKlibStatUI / klibAutoChk / klibSyncBtn 绑定随之移除；
+     KLib 打开应用时自动增量同步（autoSyncIfStale）不依赖该开关，保持默认开启 */
 
   /* v3.18.0 静态数据中心：状态表 + 定时开关/时刻 + 全部/单数据集更新（设置 → 数据管理） */
   async function renderDataHubUI() {

@@ -176,19 +176,23 @@ const DataHub = {
     return got;
   },
   async _pool(items, worker, onProgress) {
-    /* 并发池：与 KLib.ensure 同款 worker 模式 */
-    let next = 0, done = 0;
+    /* 并发池：与 KLib.ensure 同款 worker 模式。
+       v3.18.2 熔断：worker 抛 {__breaker} 时整池立即停（东财被风控时旧写法会把上千个注定
+       失败的请求全打完，白白加重封禁）；熔断以 Error 抛给调用方，绝不静默。 */
+    let next = 0, done = 0, broken = null;
     const run = async () => {
       for (;;) {
+        if (broken) return;
         const i = next++;
         if (i >= items.length) return;
-        try { await worker(items[i], i); } catch (e) { /* 单个失败由 worker 自行计数，不打断整体 */ }
+        try { await worker(items[i], i); } catch (e) { if (e && e.__breaker && !broken) broken = e; }
         done++;
         if (onProgress && (done % 20 === 0 || done === items.length)) onProgress(done, items.length);
         await new Promise(r => setTimeout(r, this.GAP));
       }
     };
     await Promise.all(Array.from({ length: Math.min(this.CONC, items.length) }, run));
+    if (broken) throw new Error(broken.__breaker);
     return done;
   },
 
@@ -240,7 +244,7 @@ const DataHub = {
     if (boards.length < this.MIN_BOARDS) throw new Error('板块列表只取回 ' + boards.length + ' 个，疑似接口异常，已放弃写入');
     /* ② 逐板块拉成分股（fs=b:BKxxxx，pz=1000 一页拿全；最大板块不足 600 只） */
     const byName = {};                               // name -> Set(codes)（行业/概念重名合并）
-    let failCnt = 0;
+    let failCnt = 0, failStreak = 0;                 // v3.18.2 failStreak=连续失败（熔断看它，不看累计）
     await this._pool(boards, async (b) => {
       try {
         const url = 'https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=1000&po=1&np=1'
@@ -256,7 +260,12 @@ const DataHub = {
           const c = String(d.f12 || '');
           if (/^\d{6}$/.test(c)) st.add(c);
         }
-      } catch (e) { failCnt++; }
+        failStreak = 0;
+      } catch (e) {
+        failCnt++; failStreak++;
+        /* v3.18.2 风控熔断：连续 10 个板块都失败 → 疑似被风控/断网，中止整轮（旧写法打完全部 ~1000 个请求） */
+        if (failStreak >= 10) throw { __breaker: '板块成分连续失败过多（疑似接口风控/断网），本轮中止——请稍后再试' };
+      }
     }, (done, total) => { prog && prog(done, total); });
     if (failCnt > boards.length * 0.2) throw new Error('成分股拉取失败率过高（' + failCnt + '/' + boards.length + '），已放弃写入');
     /* ③ 输出与 board-dict.json 同格式：b:[[板块名, [codes...]], ...]；空成分板块丢弃 */

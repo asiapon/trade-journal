@@ -603,19 +603,8 @@
           </div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-title-row">
-          <span class="card-title">💾 K线库（动量筛选数据底座）</span>
-          <span class="title-actions"><button id="klibSyncBtn" class="btn ghost sm" type="button">🔄 立即同步</button></span>
-        </div>
-        <div class="hint" id="klibStatSummary" style="margin-bottom:8px">统计读取中…</div>
-        <label class="chk" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;margin-bottom:8px">
-          <input type="checkbox" id="klibAutoChk">
-          打开应用时自动增量同步（库已建立才会跑；缺最新交易日才拉，一般 1-2 分钟，后台静默）
-        </label>
-        <div id="klibStatDaily"></div>
-        <p class="hint" style="margin-top:8px">统计按「交易日」分组：该日入库的股票数与 K 线根数（首次回补一天约 5600 只，之后每日增量各补一根）。自动同步在打开应用时后台执行，也可随时点「立即同步」；首次建库请到「分析 → 动量筛选」触发。</p>
-      </div>
+      <!-- v3.18.2 K线库卡并入静态数据中心：日K行的「更新」就是 KLib.ensure（增量同步），
+           与原 K线库卡的「立即同步」完全重复；摘要行的「日K n 只·到 x」替代原统计摘要，避免两卡重复刷数据 -->
       <!-- v3.18.0 静态数据中心：股票名录 / 板块成分 / 日K / 周K 归拢 + 每日定时更新 -->
       <div class="card">
         <div class="card-title-row">

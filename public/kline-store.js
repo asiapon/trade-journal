@@ -147,7 +147,28 @@ const KLib = {
   },
   /* 单只：东财优先（带成交额），腾讯兜底（无成交额 → 按 (O+H+L+C)/4×量 近似，入库时注明口径）。
      统一输出紧凑数组 [d,o,c,h,l,v,a] —— 库里只存这一种形状，算量/排序都吃数组。 */
-  async fetchOne(code) {
+  async fetchOne(code, have) {
+    /* v3.18.2 尾部增量：已有 ≥250 根的票先只拉末尾 40 根拼接（请求数不变、单请求 payload 降约 7 倍）。
+       拼接必须带安全锚点：库里末根日期要在尾部数据里出现且收盘价一致——
+       不一致说明发生了除权（前复权全史重定基）或数据修正，此时绝不能拼接，回退全量重拉自愈；
+       停牌超过 40 根窗口的票末根不在尾部里，同样自然回退全量。 */
+    if (have && have.bars && have.bars.length >= 250) {
+      try {
+        const kt = await fetchKlineEast(code, 101, 40);
+        const tail = this.compact(kt.bars || []);
+        const last = have.bars[have.bars.length - 1];
+        const hit = tail.find(b => b[0] === last[0]);
+        if (hit && Math.abs(hit[2] - last[2]) < 1e-6) {
+          const fresh = tail.filter(b => b[0] > last[0]);
+          if (fresh.length) {
+            const merged = have.bars.concat(fresh).slice(-this.LMT);
+            if (merged.length >= 30) return { name: kt.name || have.name, bars: merged };
+          } else {
+            return { name: kt.name || have.name, bars: have.bars.slice() };  // 无新增（重复触发），省一次全量
+          }
+        }
+      } catch (e) { /* 回退全量 */ }
+    }
     try {
       const k = await fetchKlineEast(code, 101, this.LMT);
       if (k.bars && k.bars.length >= 30) return { name: k.name, bars: this.compact(k.bars) };
@@ -198,16 +219,20 @@ const KLib = {
     }
     /* 字典里没有、但本机已有的票保留；字典有而本机没有的 = 回补主体 */
     let fetched = 0, failed = [];
+    /* v3.18.2 风控熔断：一只都没成功且已连续失败 ≥30 只 → 判定接口被风控/断网，
+       中止整轮（旧写法会把 5600 只全部打完，白白加重封禁）。 */
+    let broke = false;
     if (need.length) {
       prog('回补/增量：0/' + need.length, 0, need.length);
       let next = 0, okCnt = 0;
       const worker = async () => {
         for (;;) {
+          if (broke) return;
           const i = next++;
           if (i >= need.length) return;
           const code = need[i];
           try {
-            const rec = await this.fetchOne(code);
+            const rec = await this.fetchOne(code, map.get(code));
             /* v3.17.5 盘中拉回来的末根可能是今天半根（收盘价=当时最新价）→ 截掉不落库；
                库里最多到上一交易日，收盘后再同步自然补全。 */
             rec.bars = this.stripPartial(rec.bars || []);
@@ -215,11 +240,13 @@ const KLib = {
             else failed.push(code);
           } catch (e) { failed.push(code); }
           fetched++;
+          if (!broke && failed.length >= 30 && okCnt === 0) broke = true;
           if (fetched % 25 === 0 || fetched === need.length) prog('回补/增量：' + fetched + '/' + need.length, fetched, need.length);
           await new Promise(r => setTimeout(r, this.GAP));
         }
       };
       await Promise.all(Array.from({ length: Math.min(this.CONC, need.length) }, worker));
+      if (broke) throw new Error('K线拉取连续失败（疑似接口风控/断网），本轮中止——请稍后再试');
       NetLog.push('kline', 'K线库回补/增量' + (opts.quiet ? '（自动）' : ''), okCnt > 0 || need.length === 0, 0,
         `补 ${okCnt}/${need.length} 只（目标日 ${target}${failed.length ? '，失败 ' + failed.length + ' 只' : ''}）`);
     }
