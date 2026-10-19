@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>操作日志</title>
+<link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+
+<!-- ============ 登录 / 注册 ============ -->
+<div id="authView" class="auth-wrap" hidden>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <h1>操作日志</h1>
+    </div>
+    <div class="auth-tabs" id="authTabs">
+      <button id="tabLogin" class="auth-tab active" type="button">登录</button>
+      <button id="tabInit" class="auth-tab" type="button" hidden>初始化</button>
+    </div>
+    <!-- 用户名密码登录 -->
+    <form id="loginForm" class="auth-form">
+      <input type="text" id="loginUser" placeholder="用户名" required autocomplete="username" maxlength="30">
+      <div class="pwd-wrap">
+        <input type="password" id="loginPass" placeholder="密码" required autocomplete="current-password">
+        <button type="button" class="pwd-eye" data-eye="loginPass" aria-label="显示或隐藏密码">
+          <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
+        </button>
+      </div>
+      <button type="submit" class="btn primary block">登 录</button>
+    </form>
+    <!-- 首次使用：初始化管理员 -->
+    <form id="initForm" class="auth-form" hidden>
+      <p class="hint init-hint">系统检测到还没有任何账号，创建第一个管理员账号以开始使用。</p>
+      <input type="text" id="initUser" placeholder="管理员用户名" required minlength="2" maxlength="30" autocomplete="username">
+      <div class="pwd-wrap">
+        <input type="password" id="initPass" placeholder="设置密码（至少 6 位）" required minlength="6" autocomplete="new-password">
+        <button type="button" class="pwd-eye" data-eye="initPass" aria-label="显示或隐藏密码">
+          <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
+        </button>
+      </div>
+      <button type="submit" class="btn primary block">创建管理员并登录</button>
+    </form>
+    <!-- 强制改密 -->
+    <form id="forcePwdForm" class="auth-form" hidden>
+      <p class="hint init-hint" id="forcePwdHint">首次登录，请修改初始密码后继续。</p>
+      <div class="pwd-wrap">
+        <input type="password" id="forceOld" placeholder="当前密码" required autocomplete="current-password">
+        <button type="button" class="pwd-eye" data-eye="forceOld" aria-label="显示或隐藏密码">
+          <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
+        </button>
+      </div>
+      <div class="pwd-wrap">
+        <input type="password" id="forceNew" placeholder="新密码（至少 6 位）" required minlength="6" autocomplete="new-password">
+        <button type="button" class="pwd-eye" data-eye="forceNew" aria-label="显示或隐藏密码">
+          <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="12" cy="12" r="2.6" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
+        </button>
+      </div>
+      <button type="submit" class="btn primary block">修改密码并进入</button>
+    </form>
+    <div id="authMsg" class="auth-msg" hidden></div>
+  </div>
+</div>
+
+<!-- ============ 主应用 ============ -->
+<div id="appView" hidden>
+  <!-- 顶部栏（平板/电脑，与旧版 trade-manager 一致：品牌左、工具右） -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      操作日志
+    </div>
+    <div class="topbar-right">
+      <span id="backendBadge" class="mode-badge" title="当前连接的后端服务器地址（在 设置 → 技能 → 后端服务器地址 切换）">—</span>
+      <span id="modelBadge" class="model-badge" title="当前使用的大模型（在 设置 → 模型 中切换）">未配置</span>
+      <span id="modeBadge" class="mode-badge" title="数据存储方式">云端</span>
+      <span id="userName" class="user-email"></span>
+      <span id="userRole" class="role-badge" hidden>管理员</span>
+      <button id="logoutBtn" class="btn ghost sm" type="button">退出</button>
+    </div>
+  </header>
+
+  <!-- 横向导航（与旧版一致：顶栏下方一排 Tab） -->
+  <nav class="tabs" id="topNav">
+    <button class="tab active" data-view="today"><span class="tab-ico">◇</span>总览</button>
+    <button class="tab" data-view="trades"><span class="tab-ico">≡</span>查询</button>
+    <button class="tab" data-view="analysis"><span class="tab-ico">◎</span>分析</button>
+    <button class="tab" data-view="qa"><span class="tab-ico">💬</span>问答</button>
+    <button class="tab" data-view="me"><span class="tab-ico">⚙</span>设置</button>
+  </nav>
+
+  <main class="main">
+    <!-- ============ 今日 ============ -->
+    <section id="view-today" class="view active">
+      <!-- ① 大盘：行情数据源入口（自动刷新 / 刷新 / 报价时间） -->
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-title">大盘</span>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="tvAuto" title="自动刷新行情">
+              <option value="0" selected>关闭自动刷新</option>
+              <option value="10">10秒</option>
+              <option value="30">30秒</option>
+            </select>
+            <button class="btn ghost sm" id="tvRefreshBtn" type="button">刷新行情</button>
+          </div>
+        </div>
+        <div class="idx-bar idx-bar-lg idx-bar-eq" id="tvIdxBar" hidden></div>
+        <div class="hint" id="tvQuoteTime">—</div>
+      </div>
+
+      <!-- ② 持仓：统计数据 + 持仓列表 -->
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-title">持仓</span>
+          <div class="ctr-actions"><button class="link-btn" id="holdRecBtn" type="button">＋ 记一笔</button></div>
+        </div>
+        <div class="idx-bar idx-bar-lg idx-bar-eq" id="tvHoldSummary"></div>
+        <div class="table-scroll">
+          <table class="tbl" id="tvHoldTable">
+            <thead><tr>
+              <th>股票</th><th class="num sortable" data-sort="mv">市值</th><th class="num sortable" data-sort="float">盈亏</th><th class="num sortable" data-sort="floatPct">盈亏%</th>
+              <th class="num sortable" data-sort="qty" title="数量 = 累计持仓股数（仅作记录，不作 T+1 可卖约束）">数量</th><th class="num sortable" data-sort="cost">成本价</th><th class="num sortable" data-sort="price">现价</th>
+              <th class="num sortable" data-sort="dayPnl">当日盈亏</th><th class="num sortable" data-sort="dayPct">当日盈亏%</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+          <table class="tbl" id="tvHoldTableM">
+            <thead><tr>
+              <th>市值</th><th class="num">盈亏</th><th class="num" title="数量 = 累计持仓股数（仅作记录，不作 T+1 可卖约束）">数量</th><th class="num">成本/现价</th><th class="num">当日盈亏</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="tvHoldEmpty" class="empty" hidden>暂无持仓，<a href="javascript:void(0)" id="tvHoldEmptyRec" style="color:var(--blue)">去记一笔</a></div>
+      </div>
+
+      <!-- ③ 自选 -->
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-title">自选</span>
+          <div class="ctr-actions">
+            <button class="link-btn" id="tvWatchAddBtn" type="button">＋ 加自选</button>
+          </div>
+        </div>
+        <div class="wtabs" id="tvWatchTabs"></div>
+        <div class="table-scroll">
+          <table class="tbl" id="tvWatchTable">
+            <thead><tr>
+              <th>股票</th><th class="num sortable" data-sort="price">最新</th><th class="num sortable" data-sort="chg">涨幅</th>
+              <th class="num sortable" data-sort="open">今开</th><th class="num sortable" data-sort="high">最高</th><th class="num sortable" data-sort="low">最低</th><th class="num sortable" data-sort="prevClose">昨收</th>
+              <th class="num sortable" data-sort="date">自选日</th><th class="num sortable" data-sort="anchor">自选价</th><th class="num sortable" data-sort="gain">自选收益</th><th>备注 / 理由</th><th class="num">操作</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="tvWatchEmpty" class="empty" hidden>暂无自选股</div>
+      </div>
+    </section>
+
+    <!-- ============ 操作 ============ -->
+    <section id="view-trades" class="view">
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-title">查询</span>
+          <div class="ctr-actions"><button class="link-btn" id="recModalBtn" type="button">＋ 记一笔</button></div>
+        </div>
+        <div class="wtabs" id="tradeModeTabs"><button class="wtab on" data-m="list" type="button">默认</button><button class="wtab" data-m="stock" type="button">按股票</button></div>
+        <div class="filters-col">
+            <div class="filters">
+              <span class="f-label">时间</span>
+              <input type="date" id="ftFrom" title="开始日期">
+              <span class="filter-sep">至</span>
+              <input type="date" id="ftTo" title="结束日期">
+              <span class="f-chips" id="ftChips">
+                <button class="fchip on" data-q="today" type="button">今天</button>
+                <button class="fchip" data-q="7d" type="button">近 7 天</button>
+                <button class="fchip" data-q="30d" type="button">近 30 天</button>
+                <button class="fchip" data-q="3m" type="button">近 3 月</button>
+                <button class="fchip" data-q="year" type="button">今年以来</button>
+                <button class="fchip" data-q="all" type="button">全部</button>
+              </span>
+            </div>
+            <div class="kw-row">
+              <input type="text" id="ftKw" class="ft-kw" placeholder="关键词搜索：股票 / 代码 / 备注 / 语句">
+              <button class="btn ghost sm" id="ftClear" type="button">清空筛选</button>
+            </div>
+        </div>
+        <div class="filter-stats" id="ftStats"></div>
+        <div class="table-scroll">
+          <table class="tbl" id="tradeTable">
+            <thead><tr id="tradeTheadRow">
+              <th>时间</th><th>方向</th><th>股票</th><th class="num">价格</th><th class="num">数量</th>
+              <th class="num">成交金额</th><th class="num">费用</th><th class="num">发生金额</th><th>操作</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="tradeEmpty" class="empty" hidden>没有符合条件的记录</div>
+      </div>
+    </section>
+
+    <!-- ============ 分析中心 ============ -->
+    <section id="view-analysis" class="view">
+      <div class="set-tabs an-tabs" id="anTabs">
+        <button class="set-tab an-tab active" data-an="diag" type="button">🩺 个股诊断</button>
+        <button class="set-tab an-tab" data-an="heat" type="button">🌡️ 市场热度</button>
+        <button class="set-tab an-tab" data-an="profile" type="button">🧩 持仓画像</button>
+        <button class="set-tab an-tab" data-an="risk" type="button">🛡️ 风险分析</button>
+        <button class="set-tab an-tab" data-an="review" type="button">🔍 操作复盘</button>
+        <button class="set-tab an-tab" data-an="mom" type="button">🚀 动量筛选</button>
+        <button class="set-tab an-tab" data-an="bt" type="button">🧪 策略回测</button>
+      </div>
+
+      <!-- 页签 1：个股诊断 -->
+      <div class="set-pane an-pane" data-anpane="diag">
+        <div class="card">
+          <div class="card-title-row">
+            <span class="card-title">🩺 一键个股诊断</span>
+            <span class="hint">技术面规则引擎秒出；AI 综合解读在结果区再点按钮才生成</span>
+          </div>
+          <div class="diag-form-row">
+            <div class="selpick" id="stockPick">
+              <button type="button" class="selpick-btn" id="stockPickBtn" aria-haspopup="listbox"><span class="sp-label" id="stockPickLabel">加载中…</span><span class="sp-arrow">▾</span></button>
+              <div class="selpick-list" id="stockPickList" hidden role="listbox"></div>
+            </div>
+            <button id="stockAnalyzeBtn" class="btn primary" type="button">开始诊断</button>
+          </div>
+          <div class="diag-form-row">
+            <button id="batchDiagBtn" class="btn block" type="button">📊 批量诊断（自选 + 持仓）</button>
+          </div>
+          <div id="batchBox" class="card" hidden style="margin-top:10px"></div>
+        </div>
+        <div id="diagBox" class="card" hidden></div>
+      </div>
+
+      <!-- 页签 2：市场热度 -->
+      <div class="set-pane an-pane" data-anpane="heat" hidden>
+        <div class="card">
+          <div class="card-title-row">
+            <span class="card-title">🌡️ 市场热度</span>
+            <span class="title-actions">
+              <button id="heatDlBtn" class="btn sm" type="button" hidden title="导出本次分析的完整源数据：取数凭证 + 评分构成 + 三套口径涨跌家数 + 逐股明细 + 板块汇总 + 涨停复盘">⬇ 下载源数据</button>
+              <button id="heatRefreshBtn" class="btn primary sm" type="button">刷新行情</button>
+            </span>
+          </div>
+          <p class="hint">基于全市场实时快照（5500+ 只，约 3 秒，60 秒复用缓存）：涨跌家数、涨停/跌停、中位涨幅、赚钱效应、成交额、涨跌分布；板块热度榜；涨停复盘找当日主线。全部本地计算，不消耗 AI 额度。</p>
+          <div id="heatBox"><p class="hint">切换到本页会自动拉取；也可以点右上角「刷新行情」</p></div>
+        </div>
+      </div>
+
+      <!-- 页签 3：持仓画像 -->
+      <div class="set-pane an-pane" data-anpane="profile" hidden>
+        <div class="card">
+          <div class="card-title-row">
+            <span class="card-title">🧩 持仓画像</span>
+            <button id="profileRunBtn" class="btn primary sm" type="button">重新计算</button>
+          </div>
+          <p class="hint">把你的持仓逐只映射到所属行业 / 概念板块，算出仓位分布与集中度：同一个板块里放了好几只股票时，实际风险接近「一只票」。纯本地计算，随持仓自动更新。</p>
+          <div id="profileBox"><p class="hint">点「重新计算」查看持仓的板块 / 概念分布</p></div>
+        </div>
+      </div>
+
+      <!-- 页签 4：风险分析 -->
+      <div class="set-pane an-pane" data-anpane="risk" hidden>
+        <div class="card">
+          <div class="card-title-row">
+            <span class="card-title">🛡️ 投资组合风险分析</span>
+            <button id="riskRunBtn" class="btn primary sm" type="button">开始分析</button>
+          </div>
+          <p class="hint">基于持仓权重、日 K 线与上证指数：集中度、波动率、Beta、隐藏相关性、VaR 与压力测试（市场 -20%），给出风险调整再平衡与对冲建议。</p>
+          <div id="riskBox"><p class="hint">点击「开始分析」评估你的持仓组合</p></div>
+        </div>
+      </div>
+
+      <!-- 页签 5：操作复盘 -->
+      <div class="set-pane an-pane" data-anpane="review" hidden>
+        <div class="card">
+          <div class="card-title-row">
+            <span class="card-title">🔍 交易操作复盘</span>
+            <button id="reviewRunBtn" class="btn primary sm" type="button">开始复盘</button>
+          </div>
+          <p class="hint">审阅最近 20 笔交易的进场/出场点位与结果，识别反复出现的错误、错失的机会与行为偏差，并给出 3 条个性化规则提升一致性。</p>
+          <div id="reviewBox"><p class="hint">点击「开始复盘」审阅你的交易</p></div>
+        </div>
+        <div class="card">
+          <h3>🎯 交易行为评分</h3>
+          <p class="hint">从仓位管理、止盈止损纪律、交易频率、盈亏比等维度，对你的全部交易行为打分。</p>
+          <button id="behaviorBtn" class="btn primary block" type="button">开始行为评分</button>
+        </div>
+        <div class="card">
+          <h3>📝 阶段总结与建议</h3>
+          <p class="hint">根据已有交易与历史分析，生成本阶段总结和后续行动建议。</p>
+          <button id="stageBtn" class="btn primary block" type="button">生成阶段总结</button>
+        </div>
+      </div>
+
+      <!-- 页签：动量筛选（v3.8.74；v3.10.0 接本地K线库，历史名次精确化） -->
+      <div class="set-pane an-pane" data-anpane="mom" hidden>
+        <div class="card">
+          <div class="card-title-row">
+            <span class="card-title">🚀 动量筛选</span>
+            <span class="title-actions">
+              <button id="momSyncBtn" class="btn ghost sm" type="button">🔄 同步K线库</button>
+              <button id="momRunBtn" class="btn primary sm" type="button">🔍 开始筛选</button>
+            </span>
+          </div>
+          <div class="hint" id="momKlibStatus" style="margin-bottom:8px">💾 K 线库状态读取中…</div>
+          <div class="mom-conds">
+            连续 <input id="momN" class="inp num-in" type="number" value="3" min="1" max="10"> 日收盘涨幅排名均 ≤
+            <input id="momTopN" class="inp num-in" type="number" value="1000" min="10" max="6000"> 名；
+            量能每天 ≥ 前一日 × <input id="momVolK" class="inp num-in" type="number" value="1.1" min="0" max="10" step="0.05" placeholder="0=不限">；
+            <span class="hint" style="flex-basis:100%">⚡ 快捷预设：<button id="momPreset1" class="btn ghost sm" type="button">连3放量（默认）</button> <button id="momPreset2" class="btn ghost sm" type="button">连5纯排名（量不设限）</button> <button id="momPreset3" class="btn ghost sm" type="button">连5 + 排名前2000</button>　<span id="momPresetTip">量能填 0 = 不检查量能；成交额填 0 = 不限流动性。</span></span>
+            成交额 ≥ <input id="momAmt" class="inp num-in" type="number" value="0.5" min="0" step="0.1"> 亿
+          </div>
+          <div class="mom-conds">
+            RPS120 ≥ <input id="momRps" class="inp num-in" type="number" value="0" min="0" max="100">（0=不启用）；
+            距250日新高 ≥ <input id="momHigh" class="inp num-in" type="number" value="0" min="-100" max="0"> %（0=不启用，-10 = 回撤10%以内也行）；
+            <label class="chk"><input id="momMa" type="checkbox"> 均线多头（收&gt;MA5&gt;MA10&gt;MA20&gt;MA60）</label>
+          </div>
+          <p class="hint">
+            v3.10.0 起筛选基于<b>本地 K 线库</b>（两市全市场 12 个月日K，存云端 + 本机缓存）：历史名次由每天对全市场逐日排序复算，
+            <b>100% 精确</b>（旧版只有当日名次是真实的）。首次使用自动回补（约 3-5 分钟），之后每天增量只补缺的一根，盘中同步存的是未收盘 bar，收盘后请重按「同步K线库」。
+          </p>
+          <p class="hint">
+            排除 ST / 北交所 / 成交额不足门槛的票；名次分母含全市场（与行情软件「全 A 涨幅榜」同口径）。K 线库不可用时自动回退旧在线流程（名次含估算，会标注）。
+          </p>
+          <div id="momBox"><p class="hint">点「开始筛选」扫描全市场（首次需先回补 K 线库，约 3-5 分钟；之后秒级出结果）。</p></div>
+        </div>
+      </div>
+
+      <!-- 页签 6：策略回测 -->
+      <div class="set-pane an-pane" data-anpane="bt" hidden>
+        <div class="card">
+          <div class="card-title-row">
+            <span class="card-title">🧪 策略回测</span>
+            <button id="btRunBtn" class="btn primary sm" type="button">开始回测</button>
+          </div>
+          <div class="diag-form-row" style="flex-wrap:wrap">
+            <select id="btStock" style="max-width:200px"></select>
+            <select id="btStrat" style="max-width:220px">
+              <option value="ma">均线交叉（MA5×MA20）</option>
+              <option value="macd">MACD 金叉死叉</option>
+              <option value="rsi">RSI 背离</option>
+              <option value="drop">跌买涨卖（网格）</option>
+              <option value="boll">布林带（下轨买 / 中轨卖）</option>
+              <option value="donchian">唐奇安通道突破</option>
+              <option value="matrend">双均线 + 趋势过滤</option>
+            </select>
+            <span id="btDropWrap" class="bt-thr-wrap" hidden>
+              <label class="bt-thr"><span>跌</span><input id="btDropPct" type="number" min="0.5" max="50" step="0.5" value="5"><span>% 买入</span></label>
+              <label class="bt-thr"><span>涨</span><input id="btRisePct" type="number" min="0.5" max="50" step="0.5" value="5"><span>% 卖出</span></label>
+            </span>
+            <select id="btPeriod" style="max-width:120px">
+              <option value="22">近1个月</option>
+              <option value="66">近3个月</option>
+              <option value="120">近半年</option>
+              <option value="250" selected>近一年</option>
+              <option value="500">近两年</option>
+              <option value="750">近三年</option>
+            </select>
+          </div>
+          <div class="bt-risk-row">
+            <span class="bt-thr-wrap">
+              <label class="bt-thr"><span>固定止损</span><input id="btStopPct" type="number" min="0" max="50" step="0.5" value="0"><span>%</span></label>
+              <label class="bt-thr"><span>ATR 跟踪止损</span><input id="btAtrK" type="number" min="0" max="10" step="0.5" value="0"><span>倍</span></label>
+              <label class="bt-thr"><span>移动止盈</span><input id="btTrailPct" type="number" min="0" max="50" step="1" value="0"><span>%</span></label>
+              <label class="bt-thr"><span>回撤熔断</span><input id="btCircuitPct" type="number" min="0" max="80" step="1" value="0"><span>%</span></label>
+            </span>
+            <span class="bt-thr-wrap">
+              <select id="btBasketKey" style="max-width:160px">
+                <option value="ret">按总收益排名</option>
+                <option value="pf">按盈利因子排名</option>
+                <option value="mdd">按最大回撤排名</option>
+                <option value="wr">按成功率排名</option>
+              </select>
+              <button id="btBasketBtn" class="btn ghost sm" type="button">📊 批量对比自选 + 持仓</button>
+            </span>
+          </div>
+          <p class="hint">风控四项填 0 表示不启用；ATR 跟踪止损会自动用 14 日 ATR 跟随持仓期最高价。「批量对比」用当前策略与风控设置，跑一遍自选 + 持仓并横截面排名。</p>
+          <div id="btBox"><p class="hint">选择股票、策略与时间周期，点「开始回测」</p></div>
+        </div>
+      </div>
+
+      <div id="diagHistory" class="card" style="margin-top:12px"></div>
+    </section>
+
+    <!-- ============ 智能问答（v3.9.0 自 trade-manager 迁移核心对话） ============ -->
+    <section id="view-qa" class="view">
+      <div class="qa-layout">
+        <aside class="qa-side card">
+          <button id="newChatBtn" class="btn ghost sm block" type="button">＋ 新对话</button>
+          <input id="qaSearch" class="search-input" placeholder="🔍 搜索历史问答" autocomplete="off">
+          <div id="qaHistoryList" class="qa-history"></div>
+        </aside>
+        <div class="qa-main card">
+          <div class="qa-mtop">
+            <button id="qaDrawerBtn" class="btn ghost sm" type="button">☰ 会话<span id="qaDrawerBadge" class="qa-drawer-badge" hidden></span></button>
+            <button id="qaNewBtnM" class="btn ghost sm" type="button">＋ 新对话</button>
+          </div>
+          <div id="qaMessages" class="qa-messages"></div>
+          <div class="qa-composer">
+            <div id="qaExPanel" class="qa-ex-panel" hidden></div>
+            <div id="qaPlusMenu" class="qa-plus-menu" hidden>
+              <button type="button" class="qa-plus-item" data-act="attach"><span class="qa-plus-ic">📎</span>上传文件<span class="qa-plus-sub">txt / csv / md / json / 图片</span></button>
+              <button type="button" class="qa-plus-item" data-act="skills"><span class="qa-plus-ic">🧩</span>技能<span class="qa-plus-sub">搜索 / 启停 / 管理</span><span class="qa-plus-arrow">›</span></button>
+            </div>
+            <div id="qaSkillMenu" class="qa-skill-menu" hidden>
+              <div class="qa-skill-search"><input id="qaSkillSearch" class="search-input" placeholder="🔍 搜索技能" autocomplete="off"></div>
+              <div id="qaSkillPick" class="qa-skill-pick"></div>
+              <div class="qa-skill-foot">
+                <button type="button" class="qa-plus-item" data-act="skillLocal"><span class="qa-plus-ic">⬆</span>从本地添加技能</button>
+                <button type="button" class="qa-plus-item" data-act="skillManage"><span class="qa-plus-ic">⚙</span>管理技能</button>
+              </div>
+            </div>
+            <div id="qaAttachChips" class="qa-attach-chips" hidden></div>
+            <div class="qa-input-box">
+              <textarea id="qaInput" rows="2" placeholder="随便问我什么都可以，比如：帮我看看这周操作有什么问题？或者聊聊别的也行～"></textarea>
+              <div class="qa-toolbar">
+                <button id="qaPlusBtn" class="qa-tool-btn qa-plus-btn" title="添加：文件 / 技能" type="button">＋</button>
+                <button id="qaExBtn" class="qa-tool-btn" title="示例问题（随时点开）" type="button">💡</button>
+                <div class="qa-toolbar-right">
+                  <button id="qaMicBtn" class="qa-tool-btn" title="语音输入：按住说话" type="button">
+                    <svg class="mic-glyph" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><path d="M12 18v4"/></svg>
+                    <span class="mic-bars"><i></i><i></i><i></i><i></i></span>
+                  </button>
+                  <button id="qaSendBtn" class="qa-send-btn" title="发送" type="button">
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+                  </button>
+                  <button id="qaStopBtn" class="qa-send-btn stop" title="停止生成" type="button" hidden>
+                    <svg viewBox="0 0 24 24" width="14" height="14"><rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <input type="file" id="qaFileInput" hidden multiple accept=".txt,.csv,.md,.json,.log,.yml,.yaml,.xml,.html,.htm,.py,.js,.ts,.sql,.ini,.conf,image/*">
+          </div>
+        </div>
+        <aside class="qa-right" id="qaJumpPanel">
+          <div class="qa-jump-head">
+            <span>本会话提问</span>
+            <button id="qaJumpToggle" class="btn ghost sm" type="button" title="收起 / 展开">»</button>
+          </div>
+          <div id="qaJumpList" class="qa-jump-list"></div>
+        </aside>
+      </div>
+      <!-- v3.15.0 手机抽屉：≤720px 时左侧会话列表隐藏，点顶栏 ☰ 滑出 -->
+      <div id="qaDrawerMask" hidden></div>
+      <aside id="qaDrawer" hidden>
+        <div class="qa-drawer-head">
+          <b>会话</b>
+          <button id="qaDrawerClose" class="qa-ex-close" type="button" title="收起">✕</button>
+        </div>
+        <input id="qaSearchM" class="search-input" placeholder="🔍 搜索历史问答" autocomplete="off">
+        <button id="qaNewBtnM" class="btn ghost sm block" type="button">＋ 新对话</button>
+        <div id="qaHistoryListM" class="qa-history"></div>
+      </aside>
+    </section>
+
+    <!-- ============ 设置 ============ -->
+    <section id="view-me" class="view">
+      <!-- 设置分类页签（参考 trade-manager）：窄屏自动等分 -->
+      <div class="set-tabs" id="setTabs">
+        <button class="set-tab active" data-set="model" type="button">模型</button>
+        <button class="set-tab" data-set="cost" type="button">交易费用</button>
+        <button class="set-tab" data-set="user" type="button">用户管理</button>
+        <button class="set-tab" data-set="data" type="button">数据管理</button>
+        <button class="set-tab" data-set="skill" type="button">技能</button>
+        <button class="set-tab" data-set="log" type="button">操作日志</button>
+      </div>
+
+      <div class="set-pane" data-pane="model">
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-title">大模型设置</span>
+          <button class="btn ghost sm" id="modelReloadBtn" type="button">刷新模型列表</button>
+        </div>
+        <p class="hint" id="modelStatus">模型用于「记一笔」自然语言解析，云端免密钥调用。</p>
+        <div class="form-grid">
+          <label class="span2">当前使用模型
+            <select id="modelCurSel"><option value="">（加载中）</option></select>
+          </label>
+        </div>
+        <div class="rate-block">
+          <div class="card-title-row" style="margin-top:12px">
+            <span class="card-title" style="font-size:14px">自定义模型（OpenAI 兼容接口）</span>
+            <span class="hint">使用你自己的 API Key，不消耗 WorkBuddy 积分</span>
+          </div>
+          <p class="hint">接入任意 OpenAI 接口兼容的服务（DeepSeek、硅基流动等）。API Key 仅保存在本机浏览器，不会上传云端。</p>
+          <form id="customModelForm" class="form-grid">
+            <label>名称<input type="text" id="cmName" placeholder="如 DeepSeek" required></label>
+            <label class="span2">Base URL<input type="text" id="cmBaseUrl" placeholder="https://api.deepseek.com/v1" required></label>
+            <label>模型 ID<input type="text" id="cmModel" placeholder="deepseek-chat" required></label>
+            <label class="span2">API Key<input type="password" id="cmApiKey" placeholder="sk-..." required></label>
+            <div class="form-actions span2"><button type="submit" class="btn ghost">添加自定义模型</button></div>
+          </form>
+          <div id="customModelList" class="mini-list"></div>
+        </div>
+      </div>
+      </div>
+
+      <div class="set-pane" data-pane="cost" hidden>
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-title">费率设置</span>
+          <span class="hint">单位 ‰（千分比），印花税仅卖出收取</span>
+        </div>
+        <div id="feeEditor" class="fee-editor"></div>
+        <div class="form-actions">
+          <button class="btn primary" id="feeSaveBtn" type="button">保存费率</button>
+          <button class="btn ghost" id="feeResetBtn" type="button">恢复默认</button>
+        </div>
+        <div class="fee-calc">
+          <div class="card-title">费用试算</div>
+          <div class="quick-input-row">
+            <select id="calcType">
+              <option value="buy">买入</option>
+              <option value="sell">卖出</option>
+              <option value="both">双向对比</option>
+            </select>
+            <select id="calcMarket">
+              <option value="sh">沪市</option><option value="sz">深市</option><option value="bse">北交所</option><option value="fund">场内基金</option>
+            </select>
+            <input type="number" id="calcAmount" placeholder="成交金额（元）" step="0.01" min="0">
+            <button class="btn ghost" id="calcBtn" type="button">试算</button>
+          </div>
+          <div id="calcResult" class="fee-preview"></div>
+        </div>
+      </div>
+      </div>
+
+      <div class="set-pane" data-pane="user" hidden>
+      <!-- v3.8.49 普通用户自助改密：所有登录用户可见 -->
+      <div class="card" id="myAcctCard" hidden>
+        <div class="card-title-row">
+          <span class="card-title">修改我的密码</span>
+          <span class="hint" id="myAcctHint">—</span>
+        </div>
+        <form id="myPwdForm" class="form-grid">
+          <label class="span2">当前密码
+            <input type="password" id="mpOld" required autocomplete="current-password">
+          </label>
+          <label class="span2">新密码
+            <input type="password" id="mpNew" required minlength="6" autocomplete="new-password">
+          </label>
+          <label class="span2">确认新密码
+            <input type="password" id="mpNew2" required minlength="6" autocomplete="new-password">
+          </label>
+          <div class="form-actions span2"><button type="submit" class="btn primary">修改密码</button></div>
+        </form>
+      </div>
+      <div class="card" id="userMgmtCard" hidden>
+        <div class="card-title-row">
+          <span class="card-title">用户管理</span>
+          <span class="hint">仅管理员可见；重置密码请用「重置密码」</span>
+        </div>
+        <form id="userCreateForm" class="form-grid">
+          <label>用户名
+            <input type="text" id="nuName" placeholder="2-30 个字符" required minlength="2" maxlength="30">
+          </label>
+          <label>初始密码
+            <input type="text" id="nuPass" placeholder="至少 6 位" required minlength="6">
+          </label>
+          <label>角色
+            <select id="nuRole">
+              <option value="user">普通用户</option>
+              <option value="admin">管理员</option>
+            </select>
+          </label>
+          <div class="form-actions"><button type="submit" class="btn primary">创建账号</button></div>
+        </form>
+        <div class="table-scroll">
+          <table class="tbl" id="userTable">
+            <thead><tr><th>用户名</th><th>角色</th><th>创建时间</th><th>操作</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      </div>
+
+      <div class="set-pane" data-pane="data" hidden>
+      <div class="card">
+        <div class="card-title">数据管理</div>
+        <div id="capBar" class="hint" style="margin:6px 0;display:flex;gap:6px;flex-wrap:wrap"></div>
+        <div class="btn-row">
+          <button class="btn ghost" id="exportBtn" type="button">导出 JSON 备份</button>
+          <button class="btn ghost" id="importBtn" type="button">导入 JSON</button>
+          <button class="btn ghost" id="feeRecalcBtn" type="button">按当前费率重算历史费用</button>
+          <button class="btn ghost" id="seedBtn" type="button">载入演示数据</button>
+          <button class="btn danger" id="clearBtn" type="button">清空全部数据</button>
+          <input type="file" id="importFile" accept=".json" hidden>
+        </div>
+        <p class="hint" id="seedHint" hidden>检测到当前没有数据，可先载入演示数据体验（可随时清空）</p>
+        <div id="clearArea" class="clear-area" hidden>
+          <p class="hint">此操作不可恢复，将删除全部交易记录、自选、价格与操作日志（费率设置保留）。输入「清空」确认：</p>
+          <div class="quick-input-row">
+            <input type="text" id="clearConfirmInput" placeholder="清空">
+            <button class="btn danger" id="clearConfirmBtn" type="button" disabled>确认清空</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-title">💾 K线库（动量筛选数据底座）</span>
+          <span class="title-actions"><button id="klibSyncBtn" class="btn ghost sm" type="button">🔄 立即同步</button></span>
+        </div>
+        <div class="hint" id="klibStatSummary" style="margin-bottom:8px">统计读取中…</div>
+        <label class="chk" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;margin-bottom:8px">
+          <input type="checkbox" id="klibAutoChk">
+          打开应用时自动增量同步（库已建立才会跑；缺最新交易日才拉，一般 1-2 分钟，后台静默）
+        </label>
+        <div id="klibStatDaily"></div>
+        <p class="hint" style="margin-top:8px">统计按「交易日」分组：该日入库的股票数与 K 线根数（首次回补一天约 5600 只，之后每日增量各补一根）。自动同步在打开应用时后台执行，也可随时点「立即同步」；首次建库请到「分析 → 动量筛选」触发。</p>
+      </div>
+      <!-- v3.18.0 静态数据中心：股票名录 / 板块成分 / 日K / 周K 归拢 + 每日定时更新 -->
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-title">🗂 静态数据中心（常用数据归拢）</span>
+          <span class="title-actions"><button id="dhSyncBtn" class="btn ghost sm" type="button">🔄 全部更新</button></span>
+        </div>
+        <p class="hint" id="dhSummary" style="margin-bottom:8px">状态读取中…</p>
+        <div id="dhTable"></div>
+        <div class="quick-input-row" style="margin-top:10px;align-items:center;flex-wrap:wrap">
+          <label class="chk" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer">
+            <input type="checkbox" id="dhAutoChk">
+            每日定时自动更新
+          </label>
+          <span style="display:inline-flex;align-items:center;gap:5px">
+            <input type="time" id="dhAutoAt" value="16:30" step="60" style="width:110px">
+            <span class="hint" style="margin:0">时刻到点后（页面开着或之后打开应用）自动补跑，周末跳过；建议收盘后，如 16:30</span>
+          </span>
+        </div>
+        <p class="hint" style="margin-top:8px">四类数据归拢在一块：股票名录与板块成分原来只随应用打包快照（不更新），现在可在线拉最新；日K复用 K线库；周K由日K聚合（零请求、口径一致）。更新后的名录/板块立即生效并持久化，下次启动自动加载。全部为东财免费公开接口，无 Key。</p>
+      </div>
+      <div class="card">
+        <div class="card-title">调用日志（每次数据调用的明细）</div>
+        <div class="hint" id="netLogSummary" style="margin-bottom:8px">—</div>
+        <div id="netLogList" style="margin-bottom:8px"></div>
+        <div class="btn-row">
+          <button class="btn ghost" id="netLogClearBtn" type="button">🔄 刷新</button>
+          <button class="btn ghost" id="netLogDlBtn" type="button">下载日志文件</button>
+        </div>
+        <div class="hint" style="margin-top:8px">自托管版：日志写入服务器 <b>deploy/logs/app-日期.log</b>，覆盖三类调用（① 前端外部接口（东财/腾讯等，2.5 秒批量上报）② RPC 数据库调用 ③ Python 技能包执行），本页只读最近 200 行。云端托管版没有服务端进程、生成不了服务端日志文件，本页改为显示<b>本机浏览器记录的前端调用日志</b>（最近 200 条，存 localStorage），「下载」由浏览器本地生成 .log 文件。</div>
+      </div>
+      </div>
+
+      <!-- v3.9.9 技能中心：妙想 Key 配置 + 技能添加/删除/启停 + 数据来源一览 -->
+      <div class="set-pane" data-pane="skill" hidden>
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-title">技能中心</span>
+        </div>
+        <p class="hint" id="skillSummary">—</p>
+
+        <div class="rate-block">
+          <div class="card-title-row" style="margin-top:4px">
+            <span class="card-title" style="font-size:14px">东方财富妙想 Skills · API Key</span>
+          </div>
+          <p class="hint">妙想 Key 由东方财富「妙想 Skills 广场」免费领取（mkt_ 开头），每日限量免费额度；<b>仅保存在本机浏览器，不上传云端</b>。未配置时妙想类技能显示「待配置凭据」，问答自动只用免费公开数据源（功能略少，仍可用）。</p>
+          <div class="mx-key-row">
+            <input id="mxKeyInput" type="password" class="search-input" autocomplete="off" spellcheck="false" placeholder="粘贴妙想 Skills API KEY（形如 mkt_xxxxxxxx）">
+            <button id="mxKeyEye" class="btn ghost sm" type="button" title="显示 / 隐藏">👁</button>
+          </div>
+          <div class="form-actions">
+            <button id="mxKeyTestBtn" class="btn ghost sm" type="button">🔌 测试连接</button>
+            <button id="mxKeySaveBtn" class="btn primary sm" type="button">保存</button>
+            <button id="mxKeyClearBtn" class="btn ghost sm" type="button">清除</button>
+          </div>
+          <div id="mxKeyStatus" class="hint"></div>
+          <details class="cm-details" style="margin-top:8px">
+            <summary>免费额度怎么领？（不用买妙想 token）</summary>
+            <div class="hint">
+              1. 打开妙想 Skills 广场：<a href="https://marketing.dfcfs.com/views/finskillshub/" target="_blank" rel="noreferrer">marketing.dfcfs.com/views/finskillshub</a>；<br>
+              2. 点「API KEY 领取」，拿到一串 <b>mkt_</b> 开头的 KEY；<br>
+              3. 回到这里粘贴 → 点「测试连接」→「保存」。<br>
+              额度按自然日刷新（妙想 App「API Key 管理 → 消耗」可看各技能当日用了几次）。免费额度约 2 秒才能问一次，问太快会自动排队重试。
+            </div>
+          </details>
+        </div>
+
+        <div class="rate-block">
+          <div class="card-title-row" style="margin-top:4px">
+            <span class="card-title" style="font-size:14px">已安装技能</span>
+            <span class="hint">停用即真正关闭该能力；问答只调用已启用的技能；对话里也可以直接说「安装/卸载/停用 某技能」</span>
+          </div>
+          <div id="skillListOn"></div>
+        </div>
+
+        <div class="rate-block" id="skillOffBlock" hidden>
+          <details class="cm-details">
+            <summary>📚 浏览可安装的技能（卸载的会出现在这里，可随时装回）</summary>
+            <div id="skillListOff" style="margin-top:8px"></div>
+          </details>
+        </div>
+
+        <details class="cm-details" id="skillPackBlock">
+          <summary>📦 安装 SKILL.md 技能包（整包安装，如 a-stock-data 全部 54 端点）</summary>
+          <p class="hint" style="margin-top:6px">
+            整包安装 = 把整个技能（内嵌 Python）装到<b>你的服务器</b>上执行。前提：已部署自托管后端（deploy/），并安装 Python 与依赖（<code>pip install requests pandas</code>）。
+            WorkBuddy 云端托管没有 Python 运行时，只能用内置的 a-stock-data 移植技能（7 个常用端点）。混合模式：界面与数据继续用 WorkBuddy 托管，技能包跑在你自己的服务器上（运行时地址需 HTTPS）。
+          </p>
+          <div class="quick-input-row"><input id="pkRuntime" type="text" class="search-input" placeholder="后端服务器地址（如 https://api.你的域名；留空 = 数据与技能都走 WorkBuddy 云端）" maxlength="200"></div>
+          <div class="quick-input-row"><input id="pkUrl" type="text" class="search-input" placeholder="SKILL.md 地址" value="https://cdn.jsdelivr.net/gh/simonlin1212/a-stock-data@main/SKILL.md" maxlength="300"></div>
+          <div class="form-actions">
+            <button id="pkInstallBtn" class="btn primary sm" type="button">📦 安装技能包</button>
+            <button id="pkSaveRuntimeBtn" class="btn ghost sm" type="button">保存运行时地址</button>
+            <span class="hint" id="pkMsg"></span>
+          </div>
+        </details>
+
+        <details class="cm-details" id="skillUserBlock">
+          <summary>➕ 新建自定义技能（接任意东财公开报表，免 Key）</summary>
+          <p class="hint" style="margin-top:6px">
+            填一张表就能把「东财数据中心」的任意公开报表变成问答技能：给几个<b>触发关键词</b>（对话里出现就自动调用）、
+            报表名（如 RPT_LIFT_STAGE）和想看的列。取数走免费公开接口，与内置技能同一套审计日志。
+            报表名与字段可在 <a href="https://data.eastmoney.com/" target="_blank" rel="noreferrer">东财数据中心</a>
+            各列表页的接口里查到，开源项目 <a href="https://github.com/simonlin1212/a-stock-data" target="_blank" rel="noreferrer">a-stock-data</a> 的 SKILL.md 里有现成清单。
+          </p>
+          <div class="quick-input-row"><input id="uskName" type="text" class="search-input" placeholder="技能名称（必填，如：限售解禁）" maxlength="20"></div>
+          <div class="quick-input-row"><input id="uskKeywords" type="text" class="search-input" placeholder="触发关键词（必填，逗号分隔，如：解禁,限售,解禁日历）" maxlength="60"></div>
+          <div class="quick-input-row"><input id="uskReport" type="text" class="search-input" placeholder="东财报表名（必填，如 RPT_LIFT_STAGE）" maxlength="60"></div>
+          <div class="quick-input-row">
+            <input id="uskSortCol" type="text" class="search-input" placeholder="排序字段（可选，如 FREE_DATE）" maxlength="60" style="flex:2">
+            <select id="uskSortDir" style="flex:1"><option value="-1">降序</option><option value="1">升序</option></select>
+            <input id="uskSize" type="number" class="search-input" placeholder="行数" value="30" min="1" max="200" style="flex:1">
+          </div>
+          <div class="quick-input-row"><label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="uskStock"> 需要指定个股（按问句里的股票过滤 SECURITY_CODE）</label></div>
+          <div class="quick-input-row"><input id="uskCols" type="text" class="search-input" placeholder="显示列（可选，格式：字段=表头，多个用逗号分隔；留空显示原始前 8 列）" maxlength="300"></div>
+          <div class="form-actions">
+            <button id="uskSaveBtn" class="btn primary sm" type="button">保存并启用</button>
+            <span class="hint" id="uskMsg"></span>
+          </div>
+        </details>
+
+        <details class="cm-details">
+          <summary>📋 各技能的数据来源一览（问答里的数字从哪来）</summary>
+          <div id="skillSrcTbl" style="margin-top:8px"></div>
+          <p class="hint" style="margin-top:8px">问答时会话里每张数据表的标题下都标了「数据来源」，工具便签的能力标签也会标注来源；<b>取数原则：免费优先</b> —— 免费公开数据能取到的绝不动用妙想额度，妙想只补「资金流向 / 北向 / 两融 / 机构调研」这类免费表没有的口径。</p>
+        </details>
+      </div>
+
+      <!-- v3.17.0 语音转写（按住说话）：问答页 + 记一笔 共用的引擎B后端配置，全部存本机 -->
+      <div class="card" id="asrCard">
+        <div class="card-title-row">
+          <span class="card-title">🎙 语音转写（按住说话）</span>
+        </div>
+        <div class="quick-input-row" style="margin-top:8px">
+          <select id="asrBackend" class="search-input" style="flex:2">
+            <option value="auto">后端：自动（推荐：服务端优先，云端直连兜底）</option>
+            <option value="sf">后端：硅基流动</option>
+            <option value="tx">后端：腾讯云一句话识别</option>
+          </select>
+          <button id="asrTestBtn" class="btn ghost sm" type="button">🔌 测试</button>
+        </div>
+        <div class="quick-input-row" style="margin-top:8px">
+          <input id="asrSfKey" type="password" class="search-input" autocomplete="off" spellcheck="false" placeholder="硅基流动 Key（sfr- 开头；云端版浏览器直连必需）">
+          <button id="asrSfEye" class="btn ghost sm" type="button" title="显示 / 隐藏">👁</button>
+        </div>
+        <div class="quick-input-row" style="margin-top:8px">
+          <input id="asrTxId" type="text" class="search-input" autocomplete="off" spellcheck="false" placeholder="腾讯云 SecretId（自托管版专用）" style="flex:1">
+          <input id="asrTxKey" type="password" class="search-input" autocomplete="off" spellcheck="false" placeholder="腾讯云 SecretKey" style="flex:1">
+        </div>
+        <div class="form-actions" style="margin-top:8px">
+          <button id="asrSaveBtn" class="btn primary sm" type="button">保存语音配置</button>
+          <button id="asrClearBtn" class="btn ghost sm" type="button">清除全部</button>
+          <span class="hint" id="asrStatus"></span>
+        </div>
+        <p class="hint" style="margin-top:8px">以上<b>仅保存在本机浏览器，不上传云端</b>（腾讯云密钥只随识别请求发给你自己的自托管服务器）。免费额度：腾讯云「一句话识别」<b>每月 5000 次、逐月续发</b>（<a href="https://console.cloud.tencent.com/capi" target="_blank" rel="noopener">控制台创建密钥</a>，认准基础版引擎 16k_zh；新用户默认关闭后付费，超额自动停服不扣钱）；硅基流动 <a href="https://cloud.siliconflow.cn" target="_blank" rel="noopener">cloud.siliconflow.cn</a> 注册免费领 sfr- Key（SenseVoice 文件转写，约 3 次/分钟，个人用足够）。腾讯云接口不允许浏览器直连（无 CORS），WorkBuddy 云端版请用硅基流动；录音在浏览器内统一转成 16k WAV（≤60 秒）再上传。</p>
+      </div>
+      </div>
+
+      <div class="set-pane" data-pane="log" hidden>
+      <div class="card">
+        <div class="card-title-row">
+          <span class="card-title">操作日志</span>
+          <button class="btn ghost sm" id="logReloadBtn" type="button">刷新</button>
+        </div>
+        <div class="mini-list" id="logList"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">关于</div>
+        <p class="about-line">操作日记 v2.3.0 · 重构版（stock-journal）</p>
+        <p class="about-line" id="aboutStorage">数据存储：—</p>
+        <p class="about-line">费用口径与 trade-manager 一致：佣金（双向，最低收费）、印花税（卖出）、过户费、经手费、证管费，三市独立配置。成本核算采用移动加权平均法，费用计入买入成本。</p>
+      </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- v3.8.65 行情悬浮条：大盘卡右上角那组入口（刷新行情）滚出视口后淡入，
+       翻看长持仓/自选列表时也能随手刷新，不必再滚回顶部。
+       只在总览页生效，且原控件仍在视野内时不出现（避免同一功能出现两遍）。
+       v3.8.66：① 按钮与下拉改用与大盘卡内完全相同的 .btn.ghost.sm / 原生 select 样式；
+                ② 初始落位改到右上角（与大盘卡原位入口同一侧）；
+                ③ 可按手柄上下拖动（横向固定在右边），高度记忆在本地。
+       v3.8.75：去掉悬浮条里的「自动刷新」下拉，只保留「刷新行情」按钮。
+               理由：悬浮条的定位是「随手点一下刷新」，放个下拉既占宽度又要多一步操作；
+               自动刷新在总览页大盘卡里已有入口，功能不丢。 -->
+  <div class="quote-fab" id="quoteFab">
+    <span class="qf-grip" id="quoteFabGrip" title="按住上下拖动" aria-label="按住上下拖动悬浮条">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+    </span>
+    <button class="btn ghost sm" id="tvRefreshFab" type="button">刷新行情</button>
+  </div>
+
+  <!-- 底部 Tab（手机） -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bnav-item active" data-view="today">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>
+      <span>总览</span>
+    </button>
+    <button class="bnav-item bnav-add" data-view="trades">
+      <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke-linecap="round"/></svg>
+      <span>查询</span>
+    </button>
+    <button class="bnav-item" data-view="analysis">
+      <svg viewBox="0 0 24 24"><path d="M4 20V4m0 16h16M7 15l3.5-4.5 3 2.5L18 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>分析</span>
+    </button>
+    <button class="bnav-item" data-view="qa">
+      <svg viewBox="0 0 24 24"><path d="M20 14.5a3 3 0 0 1-3 3H9l-4 3v-3H7a3 3 0 0 1-3-3v-7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>问答</span>
+    </button>
+    <button class="bnav-item" data-view="me">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.2-3.6 4-5.4 7.5-5.4s6.3 1.8 7.5 5.4"/></svg>
+      <span>设置</span>
+    </button>
+  </nav>
+
+  <!-- 模态：加自选（v3.8.78 从「卡片内展开」改为弹窗，与「＋ 记一笔」同一交互模式）
+       表单 id 沿用 tvWatchForm/tvWf* —— app.js 里 bindWatchCard 的挂载点不用改，
+       只把原来的「展开/收起」换成「开/关弹窗」。 -->
+  <div id="watchModal" class="modal-mask" hidden>
+    <div class="modal modal-lg">
+      <div class="modal-title-row">
+        <div class="modal-title" id="watchModalTitle">加自选</div>
+        <button class="modal-x" id="watchModalClose" type="button" title="关闭">✕</button>
+      </div>
+      <form id="tvWatchForm">
+        <div class="add-row">
+          <!-- v3.8.53 联想下拉改挂在筛选框自身（.sug-anchor 容器）上，见 style.css 注释 -->
+          <div class="sug-anchor sug-stock">
+            <input type="text" id="tvWfInput" autocomplete="off" placeholder="代码 / 名称 / 拼音首字母，如 600519、贵州茅台、gzmt">
+            <div id="tvWfSug" class="sug-box" hidden></div>
+          </div>
+          <input type="text" id="tvWfNoteQuick" autocomplete="off" placeholder="备注 / 加入理由（选填）">
+          <!-- v3.8.82 分组下拉从原生 datalist 改为自绘 .wg-pick：datalist 的弹层宽度
+               由浏览器决定（往往远宽于输入框，PC 上能铺满半个弹窗），且无法用 CSS 约束。
+               自绘列表与输入框同宽，样式与联想下拉一致。仍可手动输入新分组名。 -->
+          <div class="wg-pick">
+            <input type="text" id="tvWfGroupQuick" class="wg-quick" autocomplete="off" placeholder="分组" title="分组：可选已有，也可输入新分组名">
+            <div id="tvWfGroupList" class="wg-list" hidden></div>
+          </div>
+        </div>
+        <div class="modal-actions" style="margin-top:14px">
+          <button type="button" class="btn ghost sm" id="tvWfCancel">取消</button>
+          <button type="submit" class="btn primary sm" id="tvWfSubmit">添加</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 模态：记一笔 -->
+  <div id="recModal" class="modal-mask" hidden>
+    <div class="modal modal-lg">
+      <div class="modal-title-row">
+        <div class="modal-title">记一笔</div>
+        <button class="modal-x" id="recModalClose" type="button" title="关闭">✕</button>
+      </div>
+      <div id="nlWrap">
+        <div class="quick-input-row nl-row">
+          <textarea id="tradeNl" rows="3" placeholder="一句话描述交易，例：昨天12.3买入2000股三峡能源，今天13块止盈一半"></textarea>
+          <button class="btn primary" id="tradeParseBtn" type="button">添加</button>
+        </div>
+        <div class="chips" id="tradeChips">
+          <span class="chip" data-nl="买了1000股中兴通讯单价39.5">买了1000股中兴通讯单价39.5</span>
+          <span class="chip" data-nl="40块卖了5手中兴通讯">40块卖了5手中兴通讯</span>
+          <span class="chip" data-nl="昨天12.3买入2000股三峡能源，今天13块止盈一半">昨天买入手今止盈一半</span>
+        </div>
+      </div>
+      <div id="tradeHint" class="quick-hint" hidden></div>
+      <div class="quick-input-row" style="margin-top:8px">
+        <button class="link-btn" id="tfManualToggle" type="button">手动录入 ▸</button>
+      </div>
+      <div id="tfManualWrap" hidden>
+      <form id="tradeForm" class="form-grid">
+        <div>
+          <select id="tfType" hidden>
+            <option value="buy">买入</option>
+            <option value="sell">卖出</option>
+          </select>
+          <div class="wtabs" id="tfTypeTabs" style="margin-bottom:0">
+            <button type="button" class="wtab on" data-t="buy">买</button>
+            <button type="button" class="wtab" data-t="sell">卖</button>
+          </div>
+        </div>
+        <div class="sug-anchor tf-stock-label">
+          <input type="text" id="tfStock" placeholder="股票：代码 / 名称 / 拼音，市场自动定" autocomplete="off" required>
+          <div id="tfStockSug" class="sug-box" hidden></div>
+        </div>
+        <div>
+          <input type="number" id="tfPrice" step="0.01" min="0.01" placeholder="价格" required>
+        </div>
+        <div>
+          <input type="number" id="tfQty" step="1" min="1" placeholder="数量（股），如 1000" required>
+        </div>
+        <div>
+          <input type="datetime-local" id="tfTime" required>
+        </div>
+        <div class="span2">
+          <div class="quick-hint" id="tfEditHint" hidden>编辑模式：仅可修改备注 / 交易理由，买卖方向、股票、价格、数量、时间不可更改。</div>
+          <input type="text" id="tfNote" placeholder="备注 / 交易理由（选填）">
+        </div>
+        <div class="fee-preview span2" id="feePreview"></div>
+        <div class="form-actions span2">
+          <button type="submit" class="btn primary" id="tfSubmit">保存</button>
+          <button type="submit" class="btn primary" id="tfSubmitClose">保存并关闭</button>
+          <button type="button" class="btn ghost" id="tfReset">重置</button>
+        </div>
+      </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模态：确认 -->
+  <div id="confirmModal" class="modal-mask" hidden>
+    <div class="modal">
+      <div class="modal-title" id="confirmTitle">确认</div>
+      <div class="modal-desc" id="confirmDesc"></div>
+      <!-- v3.8.43 输入型弹窗（如「新建分组」）：与确认弹窗同一套骨架，仅多这一行输入框 -->
+      <input type="text" id="confirmInput" class="dlg-input" autocomplete="off" hidden>
+      <div class="modal-actions">
+        <button class="btn ghost" id="confirmCancel" type="button">取消</button>
+        <button class="btn danger" id="confirmOk" type="button">确认</button>
+      </div>
+    </div>
+  </div>
+  <!-- Toast -->
+  <div id="toast"></div>
+  <!-- v3.8.34 分组名数据源：全局共享（总览页与自选页的分组输入框都引用它） -->
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="./kline-store.js"></script>
+<script src="./analysis-extra.js"></script>
+<script src="./qa-tools.js"></script>
+<script src="./data-hub.js"></script>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

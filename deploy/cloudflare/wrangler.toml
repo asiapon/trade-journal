@@ -1,0 +1,13 @@
+name = "trade-journal"
+main = "src/worker.js"
+compatibility_date = "2026-01-01"
+
+[assets]
+directory = "../../dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "trade-journal"
+database_id = "TO_CREATE_ON_FIRST_DEPLOY"

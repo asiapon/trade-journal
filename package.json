@@ -1,0 +1,20 @@
+{
+  "name": "trade-journal",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "deploy:cf": "npm run build && wrangler deploy -c deploy/cloudflare/wrangler.toml",
+    "deploy:wb": "npm run build && node scripts/sync-wb.mjs",
+    "deploy:self": "npm run build && node scripts/sync-self.mjs",
+    "test": "vitest run",
+    "deploy:cf:bootstrap": "wrangler d1 create trade-journal && echo 把 database_id 填入 deploy/cloudflare/wrangler.toml 后执行: wrangler d1 execute trade-journal --remote -y --file=deploy/cloudflare/schema.d1.sql"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "vitest": "^5.0.5"
+  }
+}
