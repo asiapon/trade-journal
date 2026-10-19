@@ -4,7 +4,7 @@
    把 deploy/schema.sql 里 18 个 PG SECURITY DEFINER 函数逐个移植成
    JS + D1，请求/响应契约与 WorkBuddy 云端 / 自托管后端完全一致：
      POST /.cloud/database/rest/rpc/<fn>   body 键 = p_* 命名参数
-     响应 = 函数返回值原样 JSON（app_has_users 是裸 boolean，其余是 {ok,...}）
+     响应 = 函数返回值原样 JSON（全部 {ok,...} 信封，app_has_users = {ok,data:boolean}）
    owner_id 隔离 = 每条 SQL 显式 WHERE owner_id = 会话用户（D1 无 RLS）。
    密码 = PBKDF2-SHA256（WebCrypto），替代 pgcrypto bcrypt。
    ============================================================ */
@@ -109,7 +109,9 @@ const FN = {};
 
 FN.app_has_users = async (db) => {
   const r = await db.prepare('SELECT COUNT(*) AS n FROM app_users').first();
-  return !!r.n;                                   // 裸 boolean（PG 函数 RETURNS boolean）
+  /* v0.12.3 契约修正：与 WorkBuddy/自托管同形 → {ok,data}（前端 boot 读 probe.ok&&!probe.data
+     判定首次初始化；裸 boolean 会让判定静默失效直接落登录页） */
+  return { ok: true, data: !!r.n };
 };
 
 FN.app_setup_admin = async (db, p) => {
