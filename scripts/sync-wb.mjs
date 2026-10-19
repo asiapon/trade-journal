@@ -1,12 +1,12 @@
 /* 同步构建产物到 WorkBuddy 发布暂存目录（v0.13.0：旧认领目录已废弃）
    用法：npm run build && node scripts/sync-wb.mjs
-   暂存目录 = C:\lyz\workspace\trade-journal-site（纯 dist 快照），
+   暂存目录 = C:\lyz\workspace\trade-journal-app（纯 dist 快照），
    由助手用 Sites 发布该目录生成/更新应用；可随时整个删除，下次脚本自动重建。 */
 import fs from 'node:fs';
 import path from 'node:path';
 
 const SRC = path.resolve('dist');
-const DST = 'C:/lyz/workspace/trade-journal-site';
+const DST = 'C:/lyz/workspace/trade-journal-app';
 
 if (!fs.existsSync(SRC + '/index.html')) { console.error('✗ 先 npm run build'); process.exit(1); }
 if (fs.existsSync(DST)) fs.rmSync(DST, { recursive: true, force: true });
