@@ -585,6 +585,7 @@
       <div class="card">
         <div class="card-title">数据管理</div>
         <div id="capBar" class="hint" style="margin:6px 0;display:flex;gap:6px;flex-wrap:wrap"></div>
+        <div id="dlHealth" style="margin:4px 0 10px;display:flex;gap:6px;flex-wrap:wrap"></div>
         <div class="btn-row">
           <button class="btn ghost" id="exportBtn" type="button">导出 JSON 备份</button>
           <button class="btn ghost" id="importBtn" type="button">导入 JSON</button>
@@ -654,6 +655,20 @@
           <span class="card-title">技能中心</span>
         </div>
         <p class="hint" id="skillSummary">—</p>
+
+        <!-- v0.12.0 JS 技能包：SKILL.json + 沙箱执行，三环境通用（Python 技能包仅自托管） -->
+        <div class="rate-block">
+          <div class="card-title-row" style="margin-top:4px">
+            <span class="card-title" style="font-size:14px">JS 技能包 · 跨环境可用</span>
+          </div>
+          <p class="hint">安装一个 SKILL.json 地址（可用本机文件 / 任意 HTTP 直链）。JS 技能在 WorkBuddy 云端、自托管、Cloudflare 三个环境都能执行（浏览器沙箱，无服务端依赖），安装后问答 Agent 自动获得其工具；<b>仅存本机浏览器</b>。</p>
+          <div class="mx-key-row">
+            <input id="jskillUrl" type="text" class="search-input" autocomplete="off" spellcheck="false" placeholder="SKILL.json 地址（https://… 或 data:）">
+            <button id="jskillAddBtn" class="btn ghost sm" type="button">⬆ 安装</button>
+          </div>
+          <p class="hint" id="jskillMsg" style="margin-top:4px"></p>
+          <div id="jskillList" style="margin-top:6px"></div>
+        </div>
 
         <div class="rate-block">
           <div class="card-title-row" style="margin-top:4px">

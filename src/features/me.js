@@ -1,4 +1,6 @@
 /* 设置页域：费率编辑 / 卡片渲染 / 日志视图 / 用户管理数据（v0.11.0 自单体拆出） */
+import { renderHealthPanel } from '../ui/health-panel.js';
+import { jskillsList, jskillInstallFromUrl, jskillRemove, jskillToggle } from './jskills.js';
 import { $, toast, fmt2, fmtP, fmtPct, pnlCls, esc, fmtTime, nowLocalInput, inferMarket, MKT_NAME } from '../shared/utils.js';
 import { NetLog, sjTokenHeaders } from '../core/netlog.js';
 import { StockDict } from '../core/stockdict.js';
@@ -43,10 +45,26 @@ export function switchSetPane(name) {
   /* v3.9.9 每次切到技能页都重渲染：Key / 技能开关可能在别处（问答页提示条）刚变过 */
   if (name === 'skill') renderSkillCenter();
 }
+function renderJsSkills() {
+  const box = document.getElementById('jskillList');
+  if (!box) return;
+  const list = jskillsList();
+  box.innerHTML = list.length ? list.map(s =>
+    '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:0.5px solid var(--line,#d8d6cd)">'
+    + '<label style="display:flex;align-items:center;gap:4px;flex:1;min-width:0">'
+    + '<input type="checkbox" data-jskill-toggle="' + esc(s.id) + '"' + (s.enabled !== false ? ' checked' : '') + '>'
+    + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b>' + esc(s.name) + '</b> <span class="hint">v' + esc(s.version) + ' · '
+    + s.tools.length + ' 工具 · ' + esc(s.id) + '</span></span></label>'
+    + '<button class="btn ghost sm" data-jskill-del="' + esc(s.id) + '" type="button">删</button></div>'
+  ).join('') : '<p class="hint">尚未安装 JS 技能。示例格式见 deploy/DEPLOY.md「JS 技能包」一节。</p>';
+}
+
 export function renderMe() {
   renderFeeEditor();
   renderLogs();
   renderNetLogUI();
+  renderHealthPanel('dlHealth');
+  renderJsSkills();
   const cloud = S.mode === 'cloud' && !!S.user;
   const admin = !!(cloud && S.user.role === 'admin');
   const isAdminPane = n => n !== 'cost' && n !== 'user';
@@ -128,3 +146,28 @@ export async function loadUsers() {
 /* ============================================================
    事件绑定
    ============================================================ */
+
+/* ---- JS 技能包交互（事件委托，绑定一次） ---- */
+document.addEventListener('click', async e => {
+  const add = e.target.closest('#jskillAddBtn');
+  if (add) {
+    const input = document.getElementById('jskillUrl');
+    const msg = document.getElementById('jskillMsg');
+    const url = (input && input.value || '').trim();
+    if (!url) { if (msg) msg.textContent = '请先填写 SKILL.json 地址'; return; }
+    if (msg) msg.textContent = '⏳ 正在下载并校验…';
+    try {
+      const pkg = await jskillInstallFromUrl(url);
+      if (msg) msg.textContent = '✅ 已安装「' + pkg.name + '」（' + pkg.tools.length + ' 个工具），问答里即可使用';
+      if (input) input.value = '';
+      renderJsSkills();
+    } catch (err) { if (msg) msg.textContent = '❌ 安装失败：' + (err.message || err); }
+    return;
+  }
+  const del = e.target.closest('[data-jskill-del]');
+  if (del) { jskillRemove(del.dataset.jskillDel); renderJsSkills(); return; }
+});
+document.addEventListener('change', e => {
+  const t = e.target.closest('[data-jskill-toggle]');
+  if (t) { jskillToggle(t.dataset.jskillToggle, t.checked); renderJsSkills(); }
+});

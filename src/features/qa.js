@@ -6,6 +6,7 @@ import { DL } from '../core/data-layer.js';
 import { emQuote, txQuote } from '../sources/quotes.js';
 import { TABLES, BACKEND_URL, RPC_BASE, ACCESS_KEY, CLOUD_HOST, rpc, cloudStore, localStore, setStore, loadAll, saveSetting, sessionHooks, storageHooks } from '../storage/gateway.js';
 import { S } from '../core/app-state.js';
+import { jskillAgentTools, jskillExec } from './jskills.js';
 import { cloudLlm } from '../app.js';
 import { computeHoldings } from './journal.js';
 import { llmComplete } from './llm.js';
@@ -257,6 +258,9 @@ export function qaAgentTools() {
       } });
     }
   }
+  /* v0.12.0 已启用 JS 技能 → 追加 jskill 工具（本地沙箱执行，三环境通用） */
+  const jst = jskillAgentTools();
+  if (jst.length) tools.push(...jst);
   return tools;
 }
 /* 技能 id → 具体取数函数（call_skill 的分发表） */
@@ -299,6 +303,8 @@ export async function qaAgentExec(name, args, question) {
     const out = await skillPackExec('pack-' + (args.pack || 'askill'), args.fn, args.args || {});
     return '技能包函数 ' + args.fn + ' 返回（JSON）：\n' + JSON.stringify(out).slice(0, 6000);
   }
+  /* v0.12.0 JS 技能包工具（本地沙箱执行） */
+  if (name === 'jskill') return jskillExec(args || {});
   throw new Error('未知工具 ' + name);
 }
 /* 非流式对话（带 tools），返回 assistant message（含 content / tool_calls） */

@@ -50,3 +50,22 @@ npx wrangler secret put TENCENT_SECRET_KEY -c deploy/cloudflare/wrangler.toml
 
 能力差异（设置页「环境能力」面板自动显示）：③ 无 Python 技能包/定时采集；
 ① 无服务端日志（前端日志代替）；② 全功能。各环境数据库独立，互不相通。
+
+## 附：JS 技能包（三环境通用，v0.12.0）
+
+与 SKILL.md/Python 技能包（仅②自托管可执行）互补：JS 技能在 ①②③ 全部可用（浏览器沙箱，零服务端依赖）。安装入口：**设置 → 技能 → JS 技能包**，粘贴一个 SKILL.json 直链即可。
+
+SKILL.json 格式：
+
+```json
+{
+  "id": "demo-skill",
+  "name": "演示技能",
+  "version": "1.0.0",
+  "description": "一句话说明",
+  "tools": [ { "name": "tool_a", "description": "给问答 Agent 的工具说明（它会据此决定何时调用）" } ],
+  "code": "const t = { async tool_a(args, ctx) { const r = await ctx.http('https://api.example.com/x'); const j = await r.json(); return JSON.stringify(j); } }; return t;"
+}
+```
+
+约定：`code` 在 `new Function('ctx', code)` 沙箱里执行，**必须 return 一个 `{ 工具名: async (args, ctx) => 结果文本 }` 对象**；沙箱只提供 `ctx.http(url, opts)`（10s 超时）、`ctx.now()`、`ctx.utils.esc`，无 DOM/存储访问；单次执行 15s 超时；≤20 个技能、单技能 code ≤256KB；同 id 重装即更新。安装后问答 Agent 自动多出一个 `jskill` 工具。
