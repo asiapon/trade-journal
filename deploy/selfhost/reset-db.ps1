@@ -2,7 +2,7 @@
 # 股票日记（操作日记）· 实验环境快速重置（秒级，不卸载任何组件）
 # 用法（管理员 PowerShell）：
 #   powershell -ExecutionPolicy Bypass -File .\reset-db.ps1
-# 做的事：删掉应用数据库 stockjournal → 重建空库 + 导 schema → 创建管理员
+# 做的事：删掉应用数据库 tradejournal → 重建空库 + 导 schema → 创建管理员
 #   （默认 admin/admin123，可用参数覆盖）。Node/PG/Python 全部不动。
 # 反复实验请用这个，别走「卸载 PostgreSQL → 重装」——那是分钟级的。
 # ============================================================================
@@ -12,8 +12,8 @@ param(
 )
 $ErrorActionPreference = "Stop"
 $DeployDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$DbName = "stockjournal"
-$DbUser = "stockjournal"
+$DbName = "tradejournal"
+$DbUser = "tradejournal"
 
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
   Write-Host "✗ 请用管理员身份运行" -ForegroundColor Red; exit 1
@@ -22,7 +22,7 @@ Write-Host "⚠ 即将清空数据库 $DbName 的全部数据（交易/自选/�
 $a = Read-Host "确认重置？(y/N)"
 if ($a -notmatch '^[Yy]') { Write-Host "已取消"; exit 0 }
 
-# 从 .env 读连接信息与 stockjournal 角色密码
+# 从 .env 读连接信息与 tradejournal 角色密码
 $envFile = Join-Path $DeployDir ".env"
 $DbPassword = $null
 if (Test-Path $envFile) {

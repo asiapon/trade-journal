@@ -3,7 +3,7 @@
 # 操作日记 · Ubuntu/Debian 一键部署脚本（v3.10.2）
 # 用法：  sudo bash install-ubuntu.sh
 # 可选环境变量：
-#   DB_PASSWORD=xxx    数据库角色 stockjournal 的密码（缺省随机生成，见输出）
+#   DB_PASSWORD=xxx    数据库角色 tradejournal 的密码（缺省随机生成，见输出）
 #   PORT=3000          服务端口
 # 幂等：重复执行安全（已装的跳过，schema.sql 可重复执行）。
 # ============================================================================
@@ -11,8 +11,8 @@ set -euo pipefail
 
 DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$DEPLOY_DIR")"
-DB_NAME="${DB_NAME:-stockjournal}"
-DB_USER="${DB_USER:-stockjournal}"
+DB_NAME="${DB_NAME:-tradejournal}"
+DB_USER="${DB_USER:-tradejournal}"
 DB_PASSWORD="${DB_PASSWORD:-}"
 PORT="${PORT:-3000}"
 

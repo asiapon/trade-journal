@@ -7,8 +7,8 @@
 # ============================================================================
 set -u
 DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DB_NAME="${DB_NAME:-stockjournal}"
-DB_USER="${DB_USER:-stockjournal}"
+DB_NAME="${DB_NAME:-tradejournal}"
+DB_USER="${DB_USER:-tradejournal}"
 
 [ "$(id -u)" -eq 0 ] || { echo "✗ 请用 sudo 运行"; exit 1; }
 

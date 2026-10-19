@@ -55,9 +55,9 @@ if (Test-Path (Join-Path $DeployDir "packs")) {
 }
 
 # ---------- 3. 计划任务之外的应用数据：数据库 ----------
-Write-Host "--- [3/6] 数据库（stockjournal）"
+Write-Host "--- [3/6] 数据库（tradejournal）"
 Write-Host "  ⚠ 删除数据库 = 交易记录/自选/问答历史/持仓全部清空，不可恢复！" -ForegroundColor Yellow
-if (Ask "删除数据库 stockjournal 与角色 stockjournal（默认否）") {
+if (Ask "删除数据库 tradejournal 与角色 tradejournal（默认否）") {
   $pgBin = $null
   if (Test-Path "C:\Program Files\PostgreSQL") {
     $ver = (Get-ChildItem "C:\Program Files\PostgreSQL" | Sort-Object Name -Descending | Select-Object -First 1).Name
@@ -65,8 +65,8 @@ if (Ask "删除数据库 stockjournal 与角色 stockjournal（默认否）") {
   }
   if ($pgBin -and (Test-Path (Join-Path $pgBin "psql.exe"))) {
     $env:PGPASSWORD = Read-Host "  输入 postgres 超级用户密码"
-    & (Join-Path $pgBin "psql.exe") -U postgres -h 127.0.0.1 -c "DROP DATABASE IF EXISTS stockjournal;" | Out-Null
-    & (Join-Path $pgBin "psql.exe") -U postgres -h 127.0.0.1 -c "DROP ROLE IF EXISTS stockjournal;" | Out-Null
+    & (Join-Path $pgBin "psql.exe") -U postgres -h 127.0.0.1 -c "DROP DATABASE IF EXISTS tradejournal;" | Out-Null
+    & (Join-Path $pgBin "psql.exe") -U postgres -h 127.0.0.1 -c "DROP ROLE IF EXISTS tradejournal;" | Out-Null
     Write-Host "  数据库与角色已删除"
   } else { Write-Host "  未找到 psql，跳过（可之后手动删）" }
 } else { Write-Host "  已保留数据库（推荐 —— 下次实验还能用）" }

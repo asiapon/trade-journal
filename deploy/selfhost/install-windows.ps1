@@ -24,8 +24,8 @@ try {
 }
 $DeployDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RootDir = Split-Path -Parent $DeployDir
-$DbName = "stockjournal"
-$DbUser = "stockjournal"
+$DbName = "tradejournal"
+$DbUser = "tradejournal"
 $Port = 3000
 
 Write-Host "=== 操作日记一键部署（Windows）===" -ForegroundColor Cyan
