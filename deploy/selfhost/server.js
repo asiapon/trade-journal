@@ -347,6 +347,8 @@ app.get('*', (req, res) => res.sendFile(path.join(ROOT, 'index.html')));
    · 每天 SYNC_AT（默认 17:30，收盘后）自动增量入库；
    · /api/sync/run 手动触发；/api/sync/status 查看状态。
    ============================================================ */
+process.on('unhandledRejection', e => console.error('[process] unhandledRejection（已兜底，不退出）:', e && e.message || e));
+process.on('uncaughtException', e => console.error('[process] uncaughtException（已兜底，不退出）:', e && e.message || e));
 const ksync = require('./ksync');
 const SYNC_AT = process.env.SYNC_AT || '17:30';
 let _syncing = false;
