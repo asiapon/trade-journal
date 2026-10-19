@@ -35,21 +35,33 @@ npm run build && npm run deploy:wb       # 构建 + 同步到发布目录
 
 ## ③ Cloudflare（Workers + D1）
 
-```bash
-# 首次：建库 + 建表（需 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID 环境变量）
-export CLOUDFLARE_API_TOKEN=...  CLOUDFLARE_ACCOUNT_ID=...
-npx wrangler d1 create trade-journal     # 把输出的 database_id 填进 deploy/cloudflare/wrangler.toml
-npx wrangler d1 execute trade-journal --remote -y --file=deploy/cloudflare/schema.d1.sql
-npm run deploy:cf                        # 构建 + 发布 → https://trade-journal.<子域>.workers.dev
+环境变量（三组脚本都需要）：
 
-# 语音/密钥（可选）
-npx wrangler secret put ASR_API_KEY -c deploy/cloudflare/wrangler.toml
-npx wrangler secret put TENCENT_SECRET_ID -c deploy/cloudflare/wrangler.toml
-npx wrangler secret put TENCENT_SECRET_KEY -c deploy/cloudflare/wrangler.toml
+```powershell
+$env:CLOUDFLARE_API_TOKEN="cfat_..."      # dash.cloudflare.com → My Profile → API Tokens（需 D1/Workers 编辑权限）
+$env:CLOUDFLARE_ACCOUNT_ID="9ae97..."
 ```
+
+```bash
+npm run cf:bootstrap    # 首次：确保 D1 → 写 database_id → 远端建表（幂等可重跑）
+npm run deploy:cf       # 日常：构建 + 发布
+npm run cf:delete       # 删除部署：Worker + D1（交互确认；--yes 跳过）
+```
+
+语音/密钥（可选）：`npx wrangler secret put ASR_API_KEY -c deploy/cloudflare/wrangler.toml`（同 TENCENT_SECRET_ID/KEY）。
 
 能力差异（设置页「环境能力」面板自动显示）：③ 无 Python 技能包/定时采集；
 ① 无服务端日志（前端日志代替）；② 全功能。各环境数据库独立，互不相通。
+
+## 附2：删除 / 下线各环境部署
+
+| 环境 | 删除方式 |
+|---|---|
+| ③ Cloudflare | `npm run cf:delete`（删 Worker + D1 全部数据，交互确认；重装 `npm run cf:bootstrap && npm run deploy:cf`） |
+| ① WorkBuddy | 让助手执行下线（unpublish），或自己：设置 → 数据管理 → 应用 → 删除应用（域名随之释放，**不可恢复**） |
+| ② 自托管 | 用 stop-windows.ps1 停服务（站点即下线；数据在 PG 里不受影响，再启动即恢复） |
+
+注：CF 的 cf:delete 会连 D1 库一起删（已单独确认）；①删除应用会连云库一起释放，删前先导出 JSON。
 
 ## 附：JS 技能包（三环境通用，v0.12.0）
 
