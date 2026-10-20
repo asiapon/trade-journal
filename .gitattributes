@@ -15,8 +15,13 @@
 *.md    text eol=lf
 *.toml  text eol=lf
 *.sql   text eol=lf
+*.py    text eol=lf
 *.yml   text eol=lf
 *.yaml  text eol=lf
+
+# shell 脚本需要可执行位（clone 到 Linux 后直接能跑）
+publish.sh              text eol=lf
+scripts/self/linux/*.sh text eol=lf
 
 # 二进制文件不要做换行转换
 *.png   binary

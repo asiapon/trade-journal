@@ -2,8 +2,8 @@
 # =============================================================================
 #  publish.sh —— 顶层入口（Linux / macOS / Windows Git Bash）
 # -----------------------------------------------------------------------------
-#  这层只做三件事：检查 node、给菜单、把命令转给 ops/cli.mjs。
-#  真正的实现全在 ops/ 下，改行为请改那里（见 ops/README.md）。
+#  这层只做三件事：检查 node、给菜单、把命令转给 scripts/cli.mjs。
+#  真正的实现全在 scripts/ 下，改行为请改那里（见 scripts/OPS.md）。
 #
 #  用法：
 #    ./publish.sh                 交互菜单
@@ -14,7 +14,7 @@
 #    ./publish.sh wb sync         同步 WorkBuddy 发布目录
 #    ./publish.sh help            完整命令列表
 #
-#  任意写法都行：./publish.sh cf deploy  ⇔  node ops/cli.mjs cf deploy
+#  任意写法都行：./publish.sh cf deploy  ⇔  node scripts/cli.mjs cf deploy
 # =============================================================================
 set -uo pipefail
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 1
@@ -106,4 +106,4 @@ MENU
 fi
 
 # ---------- 转交 ----------
-exec node ops/cli.mjs "$@"
+exec node scripts/cli.mjs "$@"

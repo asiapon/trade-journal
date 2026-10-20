@@ -4,8 +4,8 @@ setlocal EnableDelayedExpansion
 REM ============================================================================
 REM  publish.bat -- top-level entry (Windows)
 REM ----------------------------------------------------------------------------
-REM  This layer only: checks node, shows a menu, forwards to ops\cli.mjs.
-REM  All real logic lives in ops\  (see ops\README.md).
+REM  This layer only: checks node, shows a menu, forwards to scripts\cli.mjs.
+REM  All real logic lives in scripts\  (see scripts\OPS.md).
 REM
 REM  Usage:
 REM    publish.bat                  interactive menu
@@ -120,9 +120,9 @@ if "%ARGS%"=="" (
 REM ---------- 4. forward to cli ----------
 :dispatch
 echo.
-echo   ^>^> node ops\cli.mjs %ARGS%
+echo   ^>^> node scripts\cli.mjs %ARGS%
 echo.
-call node ops\cli.mjs %ARGS%
+call node scripts\cli.mjs %ARGS%
 set "RC=%ERRORLEVEL%"
 
 echo.

@@ -40,7 +40,7 @@ npm run preview   # 预览构建产物
 ## 发布与运维
 
 **最省事：双击 `publish.bat`（Windows）或跑 `./publish.sh`（Linux/macOS）**，
-弹菜单选编号即可。所有实现都在 `ops/` 下。
+弹菜单选编号即可。所有实现都在 `scripts/` 下。
 
 ```bash
 ./publish.sh check              # 体检：构建 + 产物校验 + 测试
@@ -51,7 +51,7 @@ npm run preview   # 预览构建产物
 ./publish.sh help               # 完整命令列表
 ```
 
-等价写法：`node ops/cli.mjs <通道> <操作>`，另有 `npm run cf:status`、
+等价写法：`node scripts/cli.mjs <通道> <操作>`，另有 `npm run cf:status`、
 `npm run self:backup` 等快捷方式。
 
 凭据写在仓库根 `.env.local`（菜单里「生成凭据」会创建模板），
@@ -70,6 +70,6 @@ npm run preview   # 预览构建产物
 （有 RPC 端点走 18 函数 RPC，否则走平台云服务 PostgREST），无需分别打包。
 登录方式统一为用户名 + 密码。
 
-- 运维手册：[ops/README.md](ops/README.md)
+- 运维手册：[scripts/OPS.md](scripts/OPS.md)
 - 部署物说明：[deploy/DEPLOY.md](deploy/DEPLOY.md)
 
