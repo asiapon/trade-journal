@@ -133,12 +133,17 @@ END $$;
 -- ⑤ RPC 函数（18 个，SECURITY DEFINER，鉴权 = p_token 查 app_sessions，30 天过期）
 -- ============================================================================
 
+-- 返回 {ok,data:boolean} 信封，与 Cloudflare（rpc.js FN.app_has_users）保持同形。
+-- 早期版本这里返回裸 boolean，前端 boot 的 `!r.ok` 判定会抛异常并静默回落本地模式
+-- （症状：打开页面显示「本地模式」，实际后端完全正常）。
+-- 必须先 DROP：PG 不允许 CREATE OR REPLACE 修改返回类型，旧环境升级会失败。
+DROP FUNCTION IF EXISTS public.app_has_users();
 CREATE OR REPLACE FUNCTION public.app_has_users()
- RETURNS boolean
+ RETURNS jsonb
  LANGUAGE sql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$ SELECT EXISTS (SELECT 1 FROM app_users) $function$;
+AS $function$ SELECT jsonb_build_object('ok', true, 'data', EXISTS (SELECT 1 FROM app_users)) $function$;
 
 CREATE OR REPLACE FUNCTION public.app_setup_admin(p_username text, p_password text)
  RETURNS jsonb
