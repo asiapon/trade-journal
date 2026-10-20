@@ -64,7 +64,9 @@ function initCloudLlm() {
    清空/读写会一并覆盖，云端则由 app_query/app_insert/app_delete 的白名单放行。 */
 
 /* ---------------- 全局状态 ---------------- */
-const APP_VER = '3.18.3';
+/* v3.18.4 APP_VER 迁至 core/version.js（stockdict.js 底层模块也要用，此处转出保持兼容） */
+import { APP_VER } from './core/version.js';
+export { APP_VER };
 
 /* v3.8.44 分组行「动作按钮」图标：与导航图标同一套线框风格（24 格 / 1.6 描边 / 圆角）
    folderPlus = 新建分组，trash = 删除当前分组。v3.8.45 起与短词并排使用。 */

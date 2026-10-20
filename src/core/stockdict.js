@@ -1,6 +1,7 @@
 /* 全市场股票字典（自 legacy 拆出） */
 import { inferMarket } from '../shared/utils.js';
 import { NetLog } from './netlog.js';
+import { APP_VER } from './version.js';
 
 export const StockDict = {
   d: {},          // code -> {name, py, mkt}
