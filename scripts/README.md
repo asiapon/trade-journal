@@ -9,28 +9,30 @@
 
 ```
 scripts/
-├── cli.mjs           统一 CLI 入口：node scripts/cli.mjs <通道> <操作>
-├── OPS.md            运维手册（要干活看这个）
-├── lib/              共用模块
-│   ├── paths.mjs       全项目唯一的路径解析处
-│   ├── ui.mjs          终端输出（颜色/步骤/表格）
-│   ├── build.mjs       构建 + 产物校验 + 单测
-│   └── env.mjs         加载 .env.local
-├── cf/               Cloudflare 通道
-│   ├── lib.mjs         wrangler 调用与 REST API 封装
-│   ├── bootstrap.mjs   首次建 D1 + 建表
-│   ├── deploy.mjs      发布
-│   ├── status.mjs      Worker / D1 / 表行数 / RPC 探测
+├── cli.mjs               统一 CLI 入口：node scripts/cli.mjs <通道> <操作>
+├── OPS.md                运维手册（Cloudflare / 自托管，要干活看这个）
+├── PUBLISH-WORKBUDDY.md  WorkBuddy 云端发布手册（换应用/首次发布，含踩坑清单）
+├── lib/                  共用模块
+│   ├── paths.mjs           全项目唯一的路径解析处
+│   ├── ui.mjs              终端输出（颜色/步骤/表格）
+│   ├── build.mjs           构建 + 产物校验 + 单测
+│   └── env.mjs             加载 .env.local
+├── cf/                   Cloudflare 通道
+│   ├── lib.mjs             wrangler 调用与 REST API 封装
+│   ├── bootstrap.mjs       首次建 D1 + 建表
+│   ├── deploy.mjs          发布
+│   ├── status.mjs          Worker / D1 / 表行数 / RPC 探测
 │   ├── logs.mjs        实时日志
-│   └── remove.mjs      删除（危险）
-├── self/             自托管通道
-│   ├── deploy.mjs      把 dist 同步到服务器（rsync/scp）
-│   ├── linux/          服务器端脚本 × 11
-│   └── windows/        服务器端脚本 × 11（ps1 + bat 垫片）
-└── dev/              开发期一次性工具
-    ├── fix-ps1.mjs     给 ps1 补 UTF-8 BOM + 统一 CRLF
-    ├── gen-bats.mjs    生成 windows/ 下的 bat 垫片
-    └── split_app.py    v0.11 历史拆解脚本，仅留档
+│   └── remove.mjs        删除（危险）
+├── self/               自托管通道
+│   ├── deploy.mjs        把 dist 同步到服务器（rsync/scp）
+│   ├── linux/            服务器端脚本 × 11
+│   └── windows/          服务器端脚本 × 11（ps1 + bat 垫片）
+└── dev/                开发期与交付期工具
+    ├── verify-deploy.mjs 发布后自检（页面/Key/域名/RPC 信封，五项）
+    ├── fix-ps1.mjs       给 ps1 补 UTF-8 BOM + 统一 CRLF
+    ├── gen-bats.mjs      生成 windows/ 下的 bat 垫片
+    └── split_app.py      v0.11 历史拆解脚本，仅留档
 ```
 
 ---
@@ -86,6 +88,7 @@ node scripts/cli.mjs self backup
 
 | 工具 | 什么时候用 |
 |---|---|
+| `verify-deploy.mjs` | **每次发布完必跑**。校验页面可访问、产物里的 key/域名与线上一致、RPC 返回 `{ok,...}` 信封。全绿才可以说"发布成功" |
 | `fix-ps1.mjs` | 改过任何 `.ps1` 后跑一次。PS 5.1 无 BOM 时按系统 ANSI 读，中文注释会变乱码导致语法报错 |
 | `gen-bats.mjs` | 只有**增删** `self/windows/*.ps1` 时才跑；只改内容不用（bat 只是转发） |
 | `split_app.py` | 不要跑。它依赖 v0.11 时 `src/app.js` 的结构，现在跑会破坏代码，仅留档回溯 |

@@ -69,6 +69,7 @@ node scripts/cli.mjs help             # 完整命令列表
 （有 RPC 端点走 18 函数 RPC，否则走平台云服务 PostgREST），无需分别打包。
 登录方式统一为用户名 + 密码。
 
-- 运维手册：[scripts/OPS.md](scripts/OPS.md)
+- 运维手册：[scripts/OPS.md](scripts/OPS.md)（Cloudflare / 自托管）
+- 云端发布手册：[scripts/PUBLISH-WORKBUDDY.md](scripts/PUBLISH-WORKBUDDY.md)（WorkBuddy 应用，含踩坑清单）
 - 部署物说明：[deploy/DEPLOY.md](deploy/DEPLOY.md)
 
