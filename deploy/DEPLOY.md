@@ -5,10 +5,70 @@
 
 ---
 
+## 快速开始：双击运行（不用记命令）
+
+仓库根有两个等价的一键脚本，**功能完全一样，选你系统对应的那个**：
+
+| 系统 | 脚本 | 怎么跑 |
+|---|---|---|
+| Windows | `publish.bat` | 双击，弹出菜单选序号 |
+| Linux / macOS / Windows Git Bash | `publish.sh` | `./publish.sh` |
+
+菜单项对应关系：
+
+```
+[1] 体检         构建 + 测试 + 产物校验（不改线上）
+[2] 发布 CF      发布到 Cloudflare Workers + D1
+[3] 本地预览     构建后起服务看效果（http://localhost:4173）
+[4] 同步 WB      构建 + 拷到 WorkBuddy 发布目录（仍需界面点发布）
+[5] 自托管       同步到自己的服务器
+[6] 开发模式     vite dev，热更新（http://localhost:5173）
+[7] CF 初始化    首次建 D1 库 + 建表
+[8] 生成凭据     .env.local 模板
+```
+
+也可以直接带参数跳过菜单：
+
+```bash
+# Windows
+publish.bat check
+publish.bat cf
+
+# Linux / macOS
+./publish.sh check
+./publish.sh cf
+```
+
+### 凭据放 `.env.local`，不用每次 set
+
+跑一次菜单里的 `[8] 生成凭据`（或 `publish.bat env` / `./publish.sh env`），
+会在仓库根生成 `.env.local`，填好即可：
+
+```ini
+CLOUDFLARE_API_TOKEN=
+CLOUDFLARE_ACCOUNT_ID=
+SELF_HOST=
+SELF_PATH=/opt/stockjournal/dist
+```
+
+两个脚本**启动时都会自动读这个文件**。它已在 `.gitignore` 里（`.env.local` 规则），
+不会被提交。已存在的环境变量优先，不会被文件覆盖。
+
+### 脚本会帮你检查什么
+
+- `node` 是否存在、版本是否 ≥ 18（`publish.sh` 会硬拦）
+- `node_modules/` 是否装了，没装就自动 `npm install`
+- Cloudflare 凭据是否齐全，缺了会打印获取路径而不是直接报错
+
+> `publish.bat` 末尾加 `--no-pause` 用于 CI 或被其它脚本调用，不等待按键：
+> `publish.bat check --no-pause`
+
+---
+
 ## 0. 发布前体检（任何通道都建议先跑）
 
 ```bash
-npm run publish:check
+npm run publish:check      # 或 publish.bat check / ./publish.sh check
 ```
 
 它会做四件事，任一步失败就停：

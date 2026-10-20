@@ -39,7 +39,18 @@ npm run preview   # 预览构建产物
 
 ## 发布
 
-统一入口 `scripts/publish.mjs`，会先构建 → 校验产物 → 跑测试，任一失败即中止：
+**最省事的方式：双击 `publish.bat`（Windows）或跑 `./publish.sh`（Linux/macOS）**，
+弹菜单选序号即可，不用记命令、不用打开 WorkBuddy。
+
+| 系统 | 脚本 | 说明 |
+|---|---|---|
+| Windows | `publish.bat` | 双击运行；末尾加 `--no-pause` 可供脚本调用 |
+| Linux/macOS/Git Bash | `publish.sh` | `chmod +x` 已设置好 |
+
+凭据写在仓库根 `.env.local`（跑一次菜单里的「生成凭据」会创建模板），
+两个脚本启动时自动加载。该文件已被 git 忽略。
+
+也可以直接用命令行入口 `scripts/publish.mjs`，会先构建 → 校验产物 → 跑测试，任一失败即中止：
 
 ```bash
 npm run publish:check    # 只体检不发布

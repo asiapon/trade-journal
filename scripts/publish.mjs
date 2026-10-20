@@ -73,11 +73,15 @@ function publishCF() {
   const acc = process.env.CLOUDFLARE_ACCOUNT_ID;
   if (!tok || !acc) {
     console.log(C.y('\n  缺少 Cloudflare 凭据，无法用命令行发布。'));
-    console.log('  PowerShell:');
-    console.log('    $env:CLOUDFLARE_API_TOKEN="你的token"');
-    console.log('    $env:CLOUDFLARE_ACCOUNT_ID="你的account id"');
-    console.log('  bash:');
-    console.log('    export CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=...');
+    console.log('\n  ' + C.b('推荐做法') + '：把凭据写进仓库根的 ' + C.b('.env.local') + '，之后无需再管');
+    console.log('    CLOUDFLARE_API_TOKEN=你的token');
+    console.log('    CLOUDFLARE_ACCOUNT_ID=你的account id');
+    console.log(C.d('\n  没有这个文件？跑一次就生成模板：'));
+    console.log(C.d('    Windows:  publish.bat env'));
+    console.log(C.d('    Linux/mac: ./publish.sh env'));
+    console.log(C.d('\n  临时用法（当前窗口有效）：'));
+    console.log('    PowerShell:  $env:CLOUDFLARE_API_TOKEN="..."; $env:CLOUDFLARE_ACCOUNT_ID="..."');
+    console.log('    bash:        export CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=...');
     console.log(C.d('\n  凭据获取：dash.cloudflare.com → My Profile → API Tokens（需 Workers + D1 编辑权限）'));
     die('未设置 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID');
   }
@@ -124,7 +128,15 @@ function checkOnly() {
 }
 
 /* ---------- 入口 ---------- */
-const cmd = process.argv[2] || 'check';
+const cmd = process.argv[2] || 'help';
+
+/* Windows 旧控制台默认 GBK，Node 按 UTF-8 输出中文会乱码。
+   这里在启动时切换到 UTF-8 代码页（失败无所谓），保证中文提示可读。 */
+if (process.platform === 'win32') {
+  const r = spawnSync('chcp', ['65001'], { shell: true, stdio: 'ignore' });
+  void r;
+}
+
 console.log(C.b('\n操作日志 · 发布工具') + C.d('  (node scripts/publish.mjs <cf|self|wb|local|check>)'));
 
 switch (cmd) {
@@ -134,11 +146,16 @@ switch (cmd) {
   case 'local': publishLocal(); break;
   case 'check': checkOnly(); break;
   default:
+    if (cmd !== 'help' && cmd !== '--help' && cmd !== '-h') {
+      console.log(C.r('\n  未知命令：' + cmd));
+    }
     console.log('\n可用命令：');
+    console.log('  check   只体检不发布（构建 + 测试 + 产物校验）');
     console.log('  cf      Cloudflare Workers + D1（纯命令行发布）');
-    console.log('  self    自托管（scp 同步 + 重启提示）');
-    console.log('  wb      构建 + 同步到 WorkBuddy 发布目录（需界面点发布）');
     console.log('  local   本地构建 + 预览');
-    console.log('  check   只体检不发布');
-    process.exit(1);
+    console.log('  wb      构建 + 同步到 WorkBuddy 发布目录（需界面点发布）');
+    console.log('  self    自托管（scp 同步 + 重启提示）');
+    console.log(C.d('\n  也可以直接用：publish.bat（Windows）或 ./publish.sh（Linux/macOS）'));
+    console.log(C.d('  凭据写在仓库根的 .env.local，两个脚本都会自动加载。'));
+    process.exit(cmd === 'help' ? 0 : 1);
 }
