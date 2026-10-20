@@ -1,0 +1,30 @@
+# 操作日志 · Cloudflare Workers 部署配置（仓库根）
+# ------------------------------------------------------------
+# 为什么要有这个文件：
+#   Cloudflare 自动构建默认执行 `npx wrangler deploy`（不带 -c），
+#   它只在仓库根目录找配置。原先配置只在 deploy/cloudflare/wrangler.toml，
+#   导致构建机器上找不到 → wrangler 误以为要新建项目 → 进入交互式向导
+#   → 尝试修改 vite.config.js 的 plugins 数组 → 报错失败。
+#
+#   这里改为在根目录提供配置，路径按仓库根解析：
+#     main    = deploy/cloudflare/src/worker.js
+#     assets  = ./dist
+#   与 deploy/cloudflare/wrangler.toml 内容等价，两者都可独立使用：
+#     · Cloudflare 自动构建 → 自动读取本文件
+#     · 本地 npm run publish:cf → 显式传 -c deploy/cloudflare/wrangler.toml
+#
+# 修改任一方的 database_id 时，记得同步另一方。
+# ------------------------------------------------------------
+name = "trade-journal"
+main = "deploy/cloudflare/src/worker.js"
+compatibility_date = "2026-01-01"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "trade-journal"
+database_id = "afdad2bf-d087-4ac9-8d87-19202f1fb8b2"

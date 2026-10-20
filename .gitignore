@@ -3,4 +3,15 @@ dist/
 .wrangler/
 deploy/cloudflare/.wrangler/
 *.log
+# .env 必须递归匹配：仅写 `.env` 只忽略根目录，deploy/selfhost/.env 会漏网（含真实密钥）
 .env
+.env.*
+!.env.example
+.env.local
+!.env.*.example
+# 发布暂存快照（在仓库外，由 scripts/sync-wb.mjs 生成，可随时重建）
+.workbuddy/backup/
+# WorkBuddy 本地状态与云服务激活标记（含 appId，不入版本库）
+.workbuddy/
+.wbapp_*.genie
+

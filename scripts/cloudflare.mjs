@@ -15,6 +15,9 @@ import { createRequire } from 'node:module';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CF_DIR = path.join(ROOT, 'deploy', 'cloudflare');
 const TOML = path.join(CF_DIR, 'wrangler.toml');
+/* 仓库根还有一份 wrangler.toml —— Cloudflare 自动构建（裸 npx wrangler deploy）只读根目录。
+   两份必须保持 database_id 一致，否则线上 Worker 会连到不同/不存在的库。 */
+const ROOT_TOML = path.join(ROOT, 'wrangler.toml');
 const DB_NAME = 'trade-journal';
 const require2 = createRequire(path.join(ROOT, 'package.json'));
 
@@ -49,14 +52,30 @@ function tomlDbId() {
   return m ? m[1] : '';
 }
 function setTomlDbId(id) {
-  let s = fs.readFileSync(TOML, 'utf8');
-  if (/^database_id\s*=/m.test(s)) s = s.replace(/^database_id\s*=\s*"[^"]*"/m, `database_id = "${id}"`);
-  else s += `\ndatabase_id = "${id}"\n`;
-  fs.writeFileSync(TOML, s);
+  for (const f of [TOML, ROOT_TOML]) {
+    if (!fs.existsSync(f)) continue;
+    let s = fs.readFileSync(f, 'utf8');
+    if (/^database_id\s*=/m.test(s)) s = s.replace(/^database_id\s*=\s*"[^"]*"/m, `database_id = "${id}"`);
+    else s += `\ndatabase_id = "${id}"\n`;
+    fs.writeFileSync(f, s);
+  }
+}
+/* 校验两份配置的 database_id 是否一致（不一致直接告警，避免静默连错库） */
+function checkTomlSync() {
+  if (!fs.existsSync(ROOT_TOML)) return;
+  const read = f => (fs.readFileSync(f, 'utf8').match(/^database_id\s*=\s*"([^"]+)"/m) || [])[1] || '';
+  const a = read(TOML), b = read(ROOT_TOML);
+  if (a && b && a !== b) {
+    console.error('⚠ database_id 不一致：');
+    console.error('   deploy/cloudflare/wrangler.toml =', a);
+    console.error('   仓库根 wrangler.toml           =', b);
+    console.error('   两处必须相同，否则本地发布与 Cloudflare 自动构建会连不同库。');
+  }
 }
 
 /* ---------- bootstrap ---------- */
 function bootstrap() {
+  checkTomlSync();
   const existing = tomlDbId();
   if (existing && existing !== 'TO_CREATE_ON_FIRST_DEPLOY') {
     console.log('✓ wrangler.toml 已配置 database_id =', existing, '（如需重建库请先跑 delete）');
@@ -90,6 +109,7 @@ function bootstrap() {
 /* ---------- deploy ---------- */
 function deploy() {
   env();
+  checkTomlSync();
   console.log('—— 构建 ——');
   execSync('npm run build', { cwd: ROOT, stdio: 'inherit' });
   console.log('—— 发布 ——');
