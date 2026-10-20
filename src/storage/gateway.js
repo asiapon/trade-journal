@@ -4,7 +4,32 @@
 import { S } from '../core/app-state.js';
 import { NetLog } from '../core/netlog.js';
 
-export const CLOUD_HOST = 'https://stock-journal-07300.app.workbuddy.host';
+/* v0.14.0 WorkBuddy 云服务（原生 SDK 接入）
+   ------------------------------------------------------------
+   云服务激活后由平台下发 publicConfig，前端只用 endpoint + publishableKey
+   （publishableKey 仅标识应用、本身不带权限，服务端按 Origin 精确校验）。
+   注意 endpoint 必须等于应用的发布域名，不可硬编码其它地址，
+   否则登录与数据请求会因 Origin 不匹配被服务端拒绝。 */
+export const CLOUD_CONFIG = {
+  endpoint: 'https://trade-journal-55799.app.workbuddy.host',
+  oauthRelayBaseUrl: 'https://www.workbuddy.cn/v2/as/genie-baas/oauth',
+  publishableKey: 'wbpk_QlBVRyRFlasNv8qKmoWHMl_sRhD55FQPV7Zzy1XpZ2gzICGWd1FDhUg',
+};
+
+/* 云库兜底地址：仅在 `file://`（无同源可用）时才会用到。
+   注意：页面经 http(s) 直开时一律走同源相对路径，不使用此常量。
+   v0.13.1：旧域名 stock-journal-07300 已随项目改名退役（实测 404），
+   改为按当前部署域名推导，可用 sj_cloud_host 覆盖。 */
+export const CLOUD_HOST = (() => {
+  try {
+    const custom = String(localStorage.getItem('sj_cloud_host') || '').trim().replace(/\/+$/, '');
+    if (custom) return custom;
+  } catch (e) { /* */ }
+  /* 同源可推导时（http/https）直接用当前 origin；file:// 下回落到云服务 endpoint */
+  return (location.protocol === 'http:' || location.protocol === 'https:')
+    ? location.origin
+    : CLOUD_CONFIG.endpoint;
+})();
 /* v3.12.0 混合模式：WorkBuddy 托管界面，数据/技能包跑在自己的服务器。
    「后端服务器地址」（设置 → 技能 → 后端服务器地址，存 sj_backend_url）非空时，
    RPC 全部指向它；留空 = 云端数据、同源相对路径，行为与之前完全一致。
@@ -46,7 +71,28 @@ export async function rpc(fn, params) {
   }
 }
 
-export const cloudStore = {
+/* 云端存储网关（v0.14.1）
+   ------------------------------------------------------------
+   两种后端并存，按「当前页面是否提供 RPC 端点」自动选择，
+   保证同一份 dist 在三种环境都能跑：
+
+   ① RPC 后端（自托管 PG / Cloudflare D1 / 旧云库）
+      统一契约 POST /.cloud/database/rest/rpc/<fn>，18 个函数。
+      自托管与 CF 都有完整的 app_login / app_query 等实现。
+   ② 平台云服务（WorkBuddy Database）
+      走 PostgREST（cloud-adapter.js）。仅当页面部署在
+      CLOUD_CONFIG.endpoint 域名下、且该环境无 RPC 时启用。
+
+   选择依据放在运行时而非构建期：同一份产物既能上 CF，
+   也能上 WorkBuddy 托管，不需要为每个环境单独打包。 */
+export { getCloud, resolveSession, clearSessionCache, useCloudService, isCloudServiceEnv, detectBackendKind, cloudAuth } from './cloud-adapter.js';
+
+/* 平台云服务的账号操作（me.js 的「用户管理」页用）。
+   注意：这些只对平台云服务后端有效；RPC 后端请走 features/auth.js 的 Auth。 */
+export { login, hasUsers, setupAdmin, changePassword, logout, listUsers } from './cloud-adapter.js';
+
+/* RPC 版 cloudStore：自托管 / Cloudflare 使用（与旧实现完全一致） */
+export const rpcStore = {
   mode: 'cloud',
   async query(table) {
     const r = await rpc('app_query', { p_token: S.token, p_table: table });
@@ -77,7 +123,23 @@ export const cloudStore = {
   },
   async log(action, summary) {
     try { await this.insert('op_logs', { action, summary }); } catch (e) { /* 日志失败不阻塞 */ }
-  }
+  },
+};
+
+/* 当前生效的云端 store：RPC 后端用 rpcStore；平台云服务用 PostgREST 版。
+   由 auth.js 在 boot 时探测决定，避免两套后端混用导致数据分裂。 */
+let activeStore = null;
+export function setCloudStore(s) { activeStore = s; }
+export function getCloudStore() { return activeStore || rpcStore; }
+export const cloudStore = {
+  get mode() { return 'cloud'; },
+  query: (...a) => getCloudStore().query(...a),
+  insert: (...a) => getCloudStore().insert(...a),
+  update: (...a) => getCloudStore().update(...a),
+  remove: (...a) => getCloudStore().remove(...a),
+  bulkInsert: (...a) => getCloudStore().bulkInsert(...a),
+  clearData: (...a) => getCloudStore().clearData(...a),
+  log: (...a) => getCloudStore().log(...a),
 };
 
 export const localStore = {

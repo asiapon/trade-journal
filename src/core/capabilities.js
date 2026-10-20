@@ -10,7 +10,7 @@ const RPC_TAIL = '/.cloud/database/rest/rpc';
 export function backendBase() {
   try {
     const be = String(localStorage.getItem('sj_backend_url') || '').trim().replace(/\/+$/, '');
-    if (location.protocol === 'file:') return (be || 'https://stock-journal-07300.app.workbuddy.host');
+    if (location.protocol === 'file:') return (be || 'https://trade-journal-55799.app.workbuddy.host');
     return be || '';
   } catch (e) { return ''; }
 }

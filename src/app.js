@@ -53,7 +53,10 @@ DL.log = (ok, src, ms, detail) => NetLog.push('quote', src, ok, ms, detail);
    平台域名前缀只在建应用时确定、事后不可改（文档原文 "cannot be changed later"），
    所以另建新应用「股票日记」（appId wbapp_mtCmnoJVwocZG4iRlx6CMe，
    stock-journal-07300）并逐字复刻整套 7 表 / 15 函数云库。
-   旧应用 stock-journal-84311、trade-journal-94951 及各自数据保持不变、互不影响 */
+   旧应用 stock-journal-84311、trade-journal-94951 及各自数据保持不变、互不影响
+   v0.13.1 提示：上述 stock-journal-07300 域名已退役（实测首页 404），
+   ACCESS_KEY 亦绑定旧应用；新部署（trade-journal-55799）若要云库，
+   须重新激活云服务并换用新应用的 access key —— 见 deploy/DEPLOY.md 附录 */
 export let cloudLlm = null;
 function initCloudLlm() {
   if (!window.WorkBuddyCloud) return null;

@@ -1,7 +1,59 @@
 /* 认证与会话（自 legacy 拆出）：boot / 登录 / 进入应用。
    与 app.js 存在循环 import（enterApp 调渲染层、app.js 调 boot）——
    ESM live binding 下函数提升 + 运行时调用，安全。 */
-import { rpc, loadAll, BACKEND_URL, setStore, cloudStore, localStore } from '../storage/gateway.js';
+import { rpc, loadAll, BACKEND_URL, setStore, cloudStore, rpcStore, setCloudStore, localStore, clearSessionCache, detectBackendKind, setupAdmin, changePassword } from '../storage/gateway.js';
+
+/* 云服务后端的会话操作（RPC 版）。放在这里而不是 gateway，
+   是因为 RPC 版要复用上面的 rpc() 且依赖 S.token。 */
+const rpcAuth = {
+  async available() { return true; },
+  async hasUsers() {
+    const r = await rpc('app_has_users');
+    if (!r || !r.ok) throw new Error((r && r.msg) || '后端不可用');
+    return !!r.data;
+  },
+  async setupAdmin(username, password) {
+    const r = await rpc('app_setup_admin', { p_username: username, p_password: password });
+    if (!r.ok) throw new Error(r.msg || '初始化失败');
+    return r.data;
+  },
+  async login(username, password) {
+    const r = await rpc('app_login', { p_username: username, p_password: password });
+    if (!r.ok) throw new Error(r.msg || '登录失败');
+    return r;
+  },
+  async changePassword(username, oldPwd, newPwd) {
+    const r = await rpc('app_change_pwd', { p_token: S.token, p_old: oldPwd, p_new: newPwd });
+    if (!r.ok) throw new Error(r.msg || '修改失败');
+  },
+  async logout(token) {
+    if (token) { try { await rpc('app_logout', { p_token: token }); } catch (e) { /* */ } }
+  },
+  async listUsers() {
+    const r = await rpc('app_list_users', { p_token: S.token });
+    if (!r.ok) throw new Error(r.msg || '读取用户失败');
+    return r.data || [];
+  },
+  async resolve(token) { if (!token) throw new Error('未登录'); return true; },
+};
+
+/* 当前生效的认证实现：boot 时按后端类型选定 */
+export let Auth = rpcAuth;
+
+export async function selectBackend() {
+  const kind = await detectBackendKind();
+  if (kind === 'cloudservice') {
+    const mod = await import('../storage/cloud-adapter.js');
+    setCloudStore(mod.cloudStore);
+    Auth = mod.cloudAuth;
+    S.backend = 'cloudservice';
+  } else {
+    setCloudStore(rpcStore);
+    Auth = rpcAuth;
+    S.backend = 'rpc';
+  }
+  return kind;
+}
 import { S } from '../core/app-state.js';
 import { $, toast, nowLocalInput } from '../shared/utils.js';
 import { StockDict } from '../core/stockdict.js';
@@ -16,22 +68,24 @@ export async function boot() {
   } catch (e) { /* */ }
   $('tfTime').value = nowLocalInput();
   try {
-    const probe = await Promise.race([
-      rpc('app_has_users'),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000))
-    ]);
     setStore(cloudStore); S.mode = 'cloud';
-    if (probe && probe.ok && !probe.data) {
-      // 首次使用：显示初始化
+    await selectBackend();                    // 先定后端（RPC / 平台云服务）
+    let firstRun = false;
+    firstRun = !(await Auth.hasUsers());      // 探测失败会抛出 → 外层回落本地模式
+    if (firstRun) {
       $('tabInit').hidden = false;
       $('tabInit').click();
       showAuth(); return;
     }
-    // 已有会话则直接进入
+    /* 已有会话则直接进入（失效则回登录页） */
     const saved = JSON.parse(localStorage.getItem('sj_user') || 'null');
-    if (saved && localStorage.getItem('sj_token')) {
-      S.token = localStorage.getItem('sj_token'); S.user = saved;
-      try { await enterApp(); return; } catch (e) { /* 会话失效走登录 */ }
+    const token = localStorage.getItem('sj_token');
+    if (saved && token) {
+      try {
+        await Auth.resolve(token);
+        S.token = token; S.user = saved;
+        await enterApp(); return;
+      } catch (e) { clearSessionCache(); }
     }
     showAuth();
   } catch (e) {
@@ -65,8 +119,7 @@ export function showAuth() {
    ============================================================ */
 
 export async function doLogin(username, password) {
-  const r = await rpc('app_login', { p_username: username, p_password: password });
-  if (!r.ok) throw new Error(r.msg || '登录失败');
+  const r = await Auth.login(username, password);
   S.token = r.token;
   S.user = { username: r.username, role: r.role, must_change_pwd: r.must_change_pwd };
   localStorage.setItem('sj_token', r.token);
@@ -79,7 +132,7 @@ export async function doLogin(username, password) {
   await enterApp();
 }
 export async function doLogout(silent) {
-  if (!silent && S.token) { try { await rpc('app_logout', { p_token: S.token }); } catch (e) { /* */ } }
+  if (!silent && S.token) { try { await Auth.logout(S.token); } catch (e) { /* */ } }
   localStorage.removeItem('sj_token');
   localStorage.removeItem('sj_user');
   if (silent) { showAuth(); switchAuthForm('loginForm'); return; }

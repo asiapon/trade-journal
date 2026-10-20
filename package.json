@@ -7,13 +7,17 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --port 4173",
-    "deploy:cf": "npm run build && wrangler deploy -c deploy/cloudflare/wrangler.toml",
-    "deploy:wb": "npm run build && node scripts/sync-wb.mjs",
-    "deploy:self": "npm run build && node scripts/sync-self.mjs",
+    "publish": "node scripts/publish.mjs",
+    "publish:check": "node scripts/publish.mjs check",
+    "publish:cf": "node scripts/publish.mjs cf",
+    "publish:self": "node scripts/publish.mjs self",
+    "publish:local": "node scripts/publish.mjs local",
+    "deploy:cf": "node scripts/publish.mjs cf",
+    "deploy:wb": "node scripts/publish.mjs wb",
+    "deploy:self": "node scripts/publish.mjs self",
     "test": "vitest run",
     "cf:bootstrap": "node scripts/cloudflare.mjs bootstrap",
-    "cf:delete": "node scripts/cloudflare.mjs delete",
-    "deploy:cf:bootstrap": "wrangler d1 create trade-journal && echo 把 database_id 填入 deploy/cloudflare/wrangler.toml 后执行: wrangler d1 execute trade-journal --remote -y --file=deploy/cloudflare/schema.d1.sql"
+    "cf:delete": "node scripts/cloudflare.mjs delete"
   },
   "devDependencies": {
     "vite": "^6.0.0",

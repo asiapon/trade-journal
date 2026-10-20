@@ -4,11 +4,11 @@ import { NetLog, sjTokenHeaders } from '../core/netlog.js';
 import { StockDict } from '../core/stockdict.js';
 import { DL } from '../core/data-layer.js';
 import { emQuote, txQuote } from '../sources/quotes.js';
-import { ACCESS_KEY, BACKEND_URL, CLOUD_HOST, RPC_BASE, TABLES, cloudStore, loadAll, localStore, rpc, saveSetting, sessionHooks, setStore, storageHooks, store } from '../storage/gateway.js';
+import { ACCESS_KEY, BACKEND_URL, CLOUD_HOST, RPC_BASE, TABLES, cloudStore, loadAll, localStore, rpc, saveSetting, sessionHooks, setStore, storageHooks, store, setupAdmin, changePassword } from '../storage/gateway.js';
 import { S } from '../core/app-state.js';
 import { U } from '../core/ui-state.js';
 import { renderAll } from '../app.js';
-import { doLogin, doLogout, switchAuthForm, authMsg } from '../features/auth.js';
+import { doLogin, doLogout, switchAuthForm, authMsg, Auth } from '../features/auth.js';
 import { renderAnalysisSelect } from '../features/diagnose.js';
 import { aiParseEntry, autoWatchOnBuy, buildTradeRow, calcFees, closeRecModal, feeDetailRow, fillFormFromParsed, fillTradeForm, isInitTrade, openRecModal, pendingTrades, quoteMap, reconcileParsedCode, renderTrades, resetTradeForm, resolveTfStock, setManualOpen, setTfStock, syncTfTypeTabs, updateFeePreview } from '../features/journal.js';
 import { loadUsers, renderFeeEditor, renderMe, renderNetLogUI, saveFeeEditor, switchSetPane } from '../features/me.js';
@@ -32,17 +32,16 @@ export function bindEvents() {
   $('initForm').addEventListener('submit', async e => {
     e.preventDefault();
     try {
-      const r = await rpc('app_setup_admin', { p_username: $('initUser').value.trim(), p_password: $('initPass').value });
-      if (!r.ok) { authMsg(r.msg || '初始化失败'); return; }
+      const u = $('initUser').value.trim(), p = $('initPass').value;
+      await Auth.setupAdmin(u, p);
       authMsg('管理员创建成功，自动登录中…', true);
-      await doLogin($('initUser').value.trim(), $('initPass').value);
+      await doLogin(u, p);
     } catch (err) { authMsg(err.message || '初始化失败'); }
   });
   $('forcePwdForm').addEventListener('submit', async e => {
     e.preventDefault();
     try {
-      const r = await rpc('app_change_pwd', { p_token: S.token, p_old: $('forceOld').value, p_new: $('forceNew').value });
-      if (!r.ok) { authMsg(r.msg || '修改失败'); return; }
+      await Auth.changePassword(S.user.username, $('forceOld').value, $('forceNew').value);
       S.user.must_change_pwd = false;
       localStorage.setItem('sj_user', JSON.stringify(S.user));
       await enterApp();

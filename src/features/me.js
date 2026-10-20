@@ -6,8 +6,9 @@ import { NetLog, sjTokenHeaders } from '../core/netlog.js';
 import { StockDict } from '../core/stockdict.js';
 import { DL } from '../core/data-layer.js';
 import { emQuote, txQuote } from '../sources/quotes.js';
-import { ACCESS_KEY, BACKEND_URL, CLOUD_HOST, RPC_BASE, TABLES, cloudStore, loadAll, localStore, rpc, saveSetting, sessionHooks, setStore, storageHooks, store } from '../storage/gateway.js';
+import { ACCESS_KEY, BACKEND_URL, CLOUD_HOST, RPC_BASE, TABLES, cloudStore, loadAll, localStore, rpc, saveSetting, sessionHooks, setStore, storageHooks, store, listUsers } from '../storage/gateway.js';
 import { S } from '../core/app-state.js';
+import { Auth } from '../features/auth.js';
 import { feeCfg } from './journal.js';
 
 export function renderFeeEditor() {
@@ -129,9 +130,9 @@ export function renderLogs() {
 }
 export async function loadUsers() {
   try {
-    const r = await rpc('app_list_users', { p_token: S.token });
-    if (!r.ok) return;
-    $('userTable').querySelector('tbody').innerHTML = r.data.map(u => `<tr>
+    const rows = await Auth.listUsers();
+    if (!rows) return;
+    $('userTable').querySelector('tbody').innerHTML = rows.map(u => `<tr>
       <td>${esc(u.username)}</td>
       <td>${u.role === 'admin' ? '<span class="tag">管理员</span>' : '<span class="tag" style="background:var(--bg);color:var(--ink-2)">用户</span>'}</td>
       <td>${fmtTime(u.created_at, true)}</td>

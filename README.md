@@ -31,12 +31,33 @@ deploy/          DEPLOY.md（三环境部署手册）+ cloudflare/ + selfhost/ +
 
 ```bash
 npm install
-npm test          # vitest（DataLayer/行情适配器/JS 技能包）
+npm test          # vitest（DataLayer/行情适配器/JS 技能包），20 用例
 npm run dev       # 本地开发（localhost:5173）
 npm run build     # 构建 → dist/
 npm run preview   # 预览构建产物
 ```
 
-## 部署
+## 发布
 
-见 [deploy/DEPLOY.md](deploy/DEPLOY.md)：`npm run deploy:cf`（Cloudflare）· `deploy:wb`（WorkBuddy 云端）· `deploy:self`（自托管）。三环境数据库独立，设置页「环境能力」面板自动显示当前后端能力。
+统一入口 `scripts/publish.mjs`，会先构建 → 校验产物 → 跑测试，任一失败即中止：
+
+```bash
+npm run publish:check    # 只体检不发布
+npm run publish:cf       # Cloudflare Workers + D1 ← 纯命令行，推荐
+npm run publish:self     # 自托管（需要 SELF_HOST=user@host）
+npm run deploy:wb        # 同步到 WorkBuddy 发布目录（仍需界面点发布）
+npm run publish:local    # 本地构建 + 预览
+```
+
+| 通道 | 纯命令行 | 数据库 | 独有能力 |
+|---|:---:|---|---|
+| Cloudflare | ✅ | D1 | — |
+| 自托管 | ✅ | PostgreSQL | Python 技能包、服务端日志、定时采集 |
+| WorkBuddy | ❌ 需界面 | 云库 | — |
+
+**同一份 `dist/` 可上任意环境**：前端启动时自动探测当前后端类型
+（有 RPC 端点走 18 函数 RPC，否则走平台云服务 PostgREST），无需分别打包。
+登录方式统一为用户名 + 密码。
+
+详见 [deploy/DEPLOY.md](deploy/DEPLOY.md)。
+
