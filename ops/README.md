@@ -25,15 +25,21 @@ trade-journal/
 │
 ├── deploy/                      ← 【部署物】被部署的代码与配置
 │   ├── cloudflare/              ← Worker + rpc.js + schema.d1.sql + wrangler
-│   ├── selfhost/                ← 自托管后端运行时（server.js 等）
-│   └── stock-dict.json          ← ksync.js 的硬依赖，勿删
+│   └── selfhost/                ← 自托管后端运行时（server.js 等）
+│
+├── public/                      ← 前端静态源文件（Vite 构建时拷进 dist/）
+│   └── stock-dict.json          ← 股票名录，采集与前端共用这一份
 │
 └── scripts/                     ← 【开发期】一次性工具，日常不用
 ```
 
-**为什么 `deploy/` 不能挪**：`server.js:343` 用 `path.join(__dirname,'..','..','dist')`
-硬指仓库根，`ksync.js:69` 用 `__dirname/../stock-dict.json` 硬指 `deploy/`。
-挪动这两个会让线上自托管直接 404。
+**为什么 `deploy/` 不能挪**：`server.js:343` 用
+`path.join(__dirname,'..','..','dist')` 硬指仓库根两级 —— 它 serve 的是**构建产物**
+（`dist/index.html` 里引用带 hash 的 `assets/index-*.js`），不是 `public/` 源码。
+挪动会让线上自托管 404 或白屏。
+
+> `public/` 里**没有** `index.html`（它在仓库根，由 Vite 处理），
+> 所以静态根只能指向 `dist/`，不能指向 `public/`。
 
 ---
 
@@ -157,6 +163,7 @@ node ops/cli.mjs self deploy --no-build   # 用现有 dist，不重新构建
 
 `dev check` 会拦三类问题：
 1. 7 个静态资源缺失（`stock-dict.json` 等，少一个线上就废）
+   —— 这些在 `dist/` 里，由 `public/` 与仓库根 `index.html` 构建而来
 2. 产物残留已退役域名 `stock-journal-07300`（云库地址已 404）
 3. 单元测试失败
 

@@ -7,7 +7,7 @@
    入库 kline_cache；启动时若库为空自动全量回补。
 
    设计：
-   · 宇宙清单读仓库自带的 stock-dict.json（与应用同一份，无额外依赖）；
+   · 宇宙清单读 public/stock-dict.json（与应用同一份源文件，无额外依赖）；
    · 数据源东财 push2his（fqt=1 前复权，f51-f57 含成交额），与前端同参数；
    · 是否有新数据用「600519 末根日期」当锚 —— 天然跳过周末/节假日，
      无新交易日时整轮只需 1 次请求即跳过；
@@ -65,8 +65,30 @@ function buildUpsertBatches(rows, size) {
   }
   return batches;
 }
+/* ---------- 宇宙清单定位 ---------- */
+/* stock-dict.json 是前端与采集共用的股票名录，源文件在 public/（Vite 构建时拷进 dist/）。
+   这里按优先级找，全都没有才报错：
+     ① public/stock-dict.json      源头，唯一需要维护的那份
+     ② dist/stock-dict.json        构建产物；只同步了 dist 没拉全仓时的兜底
+     ③ ../stock-dict.json          旧位置（v3.19 之前 deploy/ 下曾放副本），兼容已部署环境
+   三处内容一致（同一份数据），所以取到哪个都不影响结果。 */
+function dictPath() {
+  const candidates = [
+    path.join(__dirname, '..', '..', 'public', 'stock-dict.json'),
+    path.join(__dirname, '..', '..', 'dist', 'stock-dict.json'),
+    path.join(__dirname, '..', 'stock-dict.json'),
+  ];
+  for (const p of candidates) {
+    try { if (fs.existsSync(p)) return p; } catch (e) { /* 继续下一个 */ }
+  }
+  throw new Error(
+    '找不到 stock-dict.json，已查找：\n  ' + candidates.join('\n  ') +
+    '\n仓库不完整？请在仓库根确认 public/stock-dict.json 存在（或先 npm run build）',
+  );
+}
+
 function loadUniverse() {
-  const raw = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'stock-dict.json'), 'utf8'));
+  const raw = JSON.parse(fs.readFileSync(dictPath(), 'utf8'));
   const out = {};
   for (const row of (raw.d || [])) out[String(row[0]).padStart(6, '0')] = String(row[1] || '');
   return out;
@@ -151,7 +173,7 @@ async function syncAll(opts) {
   const target = ref.bars.length ? ref.bars[ref.bars.length - 1][0] : null;
   if (!target) throw new Error('无法确定最新交易日（参考票 K 线未返回）');
 
-  /* ② 库内现状（universe 可注入，测试用；缺省读仓库自带的 stock-dict.json） */
+  /* ② 库内现状（universe 可注入，测试用；缺省读 public/stock-dict.json） */
   const universe = opts.universe || loadUniverse();
   const { rows: cur } = await db.query('SELECT code, updated FROM kline_cache');
   const updatedMap = new Map(cur.map(r => [r.code, r.updated]));

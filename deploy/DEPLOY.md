@@ -26,24 +26,28 @@ deploy/
 │   ├── logs/                运行日志（app-YYYY-MM-DD.log / server-out/err）
 │   ├── .env                 运行配置（PORT / DATABASE_URL / ACCESS_KEY）
 │   └── .env.example         配置模板
-└── stock-dict.json          股票宇宙清单，ksync.js 硬依赖，**勿删**
 ```
 
 > 这个目录里**没有再放启停/安装脚本** —— 那些已统一到 `ops/self/`。
 > v3.18.x 及以前放在这里的 `install-*.sh`、`start-windows.ps1` 等都已迁走。
+> v3.19 起 `stock-dict.json` 也移走了（此前 `deploy/` 下存过一份副本），
+> 采集与前端现在共用 `public/stock-dict.json` 这一个源文件。
 
 ---
 
 ## 路径硬依赖（改结构前必看）
 
-两个地方用了相对路径，挪动 `deploy/` 会让线上直接 404：
+只有一处相对路径是硬绑定的：
 
-| 文件 | 代码 | 实际指向 |
-|---|---|---|
-| `selfhost/server.js` | `path.join(__dirname, '..', '..', 'dist')` | 仓库根 `dist/` |
-| `selfhost/ksync.js` | `path.join(__dirname, '..', 'stock-dict.json')` | `deploy/stock-dict.json` |
+| 文件 | 代码 | 实际指向 | 为什么不能改 |
+|---|---|---|---|
+| `selfhost/server.js:343` | `path.join(__dirname, '..', '..', 'dist')` | 仓库根 `dist/` | 静态托管的是**构建产物**。`dist/index.html` 里引用带 hash 的 `assets/index-*.js`，而 `public/` 连 `index.html` 都没有（它在仓库根，由 Vite 处理）。指向 `public/` 会白屏 |
 
-所以 `deploy/selfhost/` 必须留在 `deploy/` 下、`deploy/` 必须留在仓库根下。
+`ksync.js` 读数据文件的路径**不是**硬依赖 —— 它按 `public/` → `dist/` → 旧
+`deploy/` 位置 依次查找，三处内容相同，取到哪个都行（见源码 `dictPath()`）。
+
+结论：`deploy/selfhost/` 必须留在 `deploy/` 下、`deploy/` 必须留在仓库根下（差一级
+`../../dist` 就指错地方）。
 
 ---
 

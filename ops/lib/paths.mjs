@@ -10,8 +10,11 @@
      WB_DIR    WorkBuddy 暂存   <仓库外>/trade-journal-app
 
    为什么 deploy/ 不能挪：server.js 里 `path.join(__dirname,'..','..','dist')`
-   硬指仓库根，ksync.js 里 `__dirname/../stock-dict.json` 硬指 deploy/。
-   挪动会让线上自托管直接 404。
+   硬指仓库根两级 —— 它 serve 的是构建产物（dist/index.html 里引用带 hash 的
+   assets/index-*.js），不是 public/ 源码。挪动会让线上自托管直接 404 或白屏。
+
+   对照：ksync.js 读的 stock-dict.json 已改为优先 public/（源文件），
+   dist/ 与旧 deploy/ 位置作兜底，所以它不再构成目录位置的约束。
    ============================================================ */
 import path from 'node:path';
 import fs from 'node:fs';
