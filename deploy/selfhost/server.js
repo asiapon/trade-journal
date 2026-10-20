@@ -140,10 +140,12 @@ app.post('/api/log', express.json({ limit: '2mb' }), async (req, res) => {
   if (!(await requireSession(req))) return res.status(401).json({ ok: false, msg: '需要登录（token 无效）' });
   const entries = (req.body && Array.isArray(req.body.entries)) ? req.body.entries.slice(0, 100) : [];
   for (const e of entries) {
-    /* v3.18.3 落盘全部字段：src/url/req/resp/err（旧版只落 detail/src，「全部的返回」缺失） */
+    /* v3.18.5 落盘全部字段：src/url/req/resp/err；URL 直接拼进明细列（用户要求：调用了什么
+       HTTP 接口要一眼可见，不只埋在 meta JSON 里） */
+    const detail = (e.url ? '[' + e.url + '] ' : '') + (e.detail || '');
     const meta = {};
     for (const k of ['src', 'url', 'req', 'resp', 'err']) if (e[k]) meta[k] = e[k];
-    logger.log('web', e.kind || 'fetch', e.name || '', e.ok !== false, e.ms || 0, e.detail || '', Object.keys(meta).length ? meta : '');
+    logger.log('web', e.kind || 'fetch', e.name || '', e.ok !== false, e.ms || 0, detail, Object.keys(meta).length ? meta : '');
   }
   res.json({ ok: true, accepted: entries.length });
 });

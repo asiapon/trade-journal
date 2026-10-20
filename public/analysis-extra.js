@@ -181,7 +181,7 @@ async function fetchQuotesTencent(codes) {
       { url: 'https://qt.gtimg.cn/q=' + q.slice(0, 200) + '…', req: `${codes.length} 只/批`, err: '整批未返回' });
     return out;
   } catch (e) {
-    NetLog.push('quote', '腾讯 qt.gtimg.cn(快照分批)', false, Date.now() - t0, e.message || String(e), { err: e.message || String(e) });
+    NetLog.push('quote', '腾讯 qt.gtimg.cn(快照分批)', false, Date.now() - t0, e.message || String(e), { url: 'https://qt.gtimg.cn/q=' + q.slice(0, 200) + '…', err: e.message || String(e) });
     return {};
   }
 }
@@ -1216,18 +1216,18 @@ async function fetchIndexKline() { // 上证指数日 K（对齐 Beta / 相关�
     const res = await fetch(url);
     const j = await res.json();
     const bars = ((j.data && j.data.klines) || []).map(s => { const a = s.split(','); return { d: a[0], c: +a[2] }; });
-    if (bars.length > 60) { NetLog.push('kline', '东财 上证指数日K', true, Date.now() - t0, `${bars.length}根`); return bars; }
-  } catch (e) { /* 降级 */ NetLog.push('kline', '东财 上证指数日K', false, Date.now() - t0, e.message || String(e)); }
+    if (bars.length > 60) { NetLog.push('kline', '东财 上证指数日K', true, Date.now() - t0, `${bars.length}根`, { url }); return bars; }
+  } catch (e) { /* 降级 */ NetLog.push('kline', '东财 上证指数日K', false, Date.now() - t0, e.message || String(e), { url, err: e.message || String(e) }); }
   const t1 = Date.now();
   try {
     const res2 = await fetch('https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=sh000001,day,,,260,');
     const j2 = await res2.json();
     const d2 = (j2.data && j2.data.sh000001) || {};
     const bars2 = (d2.day || []).map(k => ({ d: k[0], c: +k[2] }));
-    NetLog.push('kline', '腾讯 上证指数日K(降级)', bars2.length > 0, Date.now() - t1, `${bars2.length}根`);
+    NetLog.push('kline', '腾讯 上证指数日K(降级)', bars2.length > 0, Date.now() - t1, `${bars2.length}根`, { url: 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=sh000001,day,,,260,' });
     return bars2;
   } catch (e) {
-    NetLog.push('kline', '腾讯 上证指数日K(降级)', false, Date.now() - t1, e.message || String(e));
+    NetLog.push('kline', '腾讯 上证指数日K(降级)', false, Date.now() - t1, e.message || String(e), { url: 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=sh000001,day,,,260,', err: e.message || String(e) });
     throw e;
   }
 }
