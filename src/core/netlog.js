@@ -28,12 +28,12 @@ export const NetLog = {
     const x = extra || {};
     const e = {
       t: new Date().toISOString(), kind, name, ok: !!ok, ms: Math.round(ms),
-      detail: this._cut(detail, 400),
+      detail: this._cut(detail, 800),
       src: this._cut(x.src != null ? x.src : this.curCtx(), 120),
       url: this._cut(x.url, 400),
-      req: this._cut(x.req, 300),
-      resp: this._cut(x.resp, 300),
-      err: this._cut(x.err != null ? x.err : (ok ? '' : detail), 300),
+      req: this._cut(x.req, 500),
+      resp: this._cut(x.resp, 1000),
+      err: this._cut(x.err != null ? x.err : (ok ? '' : detail), 1000),
     };
     this.buf.unshift(e);
     if (this.buf.length > this.max) this.buf.length = this.max;
@@ -50,18 +50,30 @@ export const NetLog = {
   _outbox: [],
   _upDisabled: false,
   _upT: null,
+  _upDelay: 0,                                 // v3.18.3 上报失败退避 ms（成功后清零）
   _scheduleUpload() {
     clearTimeout(this._upT);
-    this._upT = setTimeout(() => this.flushToServer(), 2500);
+    this._upT = setTimeout(() => this.flushToServer(), this._upDelay || 2500);
   },
   flushToServer() {
     if (this._upDisabled || location.protocol === 'file:') return;
     if (!this._outbox.length) return;
     const entries = this._outbox.splice(0, this._outbox.length);
-    fetch('/api/log', { method: 'POST', headers: sjTokenHeaders(),
-      body: JSON.stringify({ entries: entries.map(x => ({ t: x.t, kind: x.kind, name: x.name, ok: x.ok, ms: x.ms, detail: x.detail, src: x.src })) }) })
-      .then(r => { if (!r.ok) this._upDisabled = true; })
-      .catch(() => { this._upDisabled = true; });
+    /* v3.18.3 全量字段上报：url/req/resp/err 一并送服务端落盘
+       （旧版只发 detail/src——LLM 402 这类错误的完整返回体在文件日志里看不到） */
+    const body = JSON.stringify({ entries: entries.map(x => ({ t: x.t, kind: x.kind, name: x.name, ok: x.ok, ms: x.ms, detail: x.detail, src: x.src, url: x.url, req: x.req, resp: x.resp, err: x.err })) });
+    fetch('/api/log', { method: 'POST', headers: sjTokenHeaders(), body })
+      .then(r => {
+        if (r.status === 404) { this._upDisabled = true; return; }   // 云端托管版没有该端点：仅此时停用
+        if (!r.ok) throw new Error('HTTP ' + r.status);              // 401/5xx：不再永久停用（旧写法登录前的日志全丢）
+        this._upDelay = 0;
+      })
+      .catch(() => {
+        /* v3.18.3 失败不丢数据：条目放回队首（上限 800），指数退避重试 15s→5min */
+        this._outbox = entries.concat(this._outbox).slice(0, 800);
+        this._upDelay = Math.min((this._upDelay || 15000) * 2, 300000);
+        this._scheduleUpload();
+      });
   },
   /* 下载文本：一条一块、带标签行，缺的字段不输出（不像旧版挤在一行什么都要猜） */
   text() {
