@@ -47,16 +47,20 @@ DL.log = (ok, src, ms, detail) => NetLog.push('quote', src, ok, ms, detail);
 
 /* ---------------- 云端配置 ----------------
    云端访问 key 与应用域名绑定（服务端校验 Origin）；
-   云端运行走相对路径，本地打开走云端绝对地址，均指向同一后端
-   v3.8.63 曾迁至应用「股票操作日志」（appId wbapp_nRQHqCtwORJYvXyAPTEn0E，域名
-   trade-journal-94951）；v3.8.64 按用户要求把链接前缀改成 stock-journal ——
-   平台域名前缀只在建应用时确定、事后不可改（文档原文 "cannot be changed later"），
-   所以另建新应用「股票日记」（appId wbapp_mtCmnoJVwocZG4iRlx6CMe，
-   stock-journal-07300）并逐字复刻整套 7 表 / 15 函数云库。
-   旧应用 stock-journal-84311、trade-journal-94951 及各自数据保持不变、互不影响
-   v0.13.1 提示：上述 stock-journal-07300 域名已退役（实测首页 404），
-   ACCESS_KEY 亦绑定旧应用；新部署（trade-journal-55799）若要云库，
-   须重新激活云服务并换用新应用的 access key —— 见 deploy/DEPLOY.md 附录 */
+   云端运行走相对路径，本地打开走云端绝对地址，均指向同一后端。
+
+   历史沿革（看代码时容易困惑，按时间顺序）：
+     v3.8.63  应用「股票操作日志」wbapp_nRQHqCtwORJYvXyAPTEn0E / trade-journal-94951
+     v3.8.64  改前缀需新建应用（平台域名建应用时确定、事后不可改）→
+              应用「股票日记」wbapp_mtCmnoJVwocZG4iRlx6CMe / stock-journal-07300
+     v0.13.1  stock-journal-07300 退役（首页 404）
+     之后    wbapp_QlBVRyRFlasNv8qKmoWHMl / trade-journal-55799
+     v3.20.1 上述应用在「设置—数据管理—应用」中被删除，云库一并失效；
+              重建为 wbapp_kQybJuiH2NW1ZZKop1t8Wz / trade-journal-81772
+              （当前生效值见 src/storage/gateway.js 的 CLOUD_CONFIG）
+
+   换应用后必须同步三处，否则表现为「云服务未启用」：
+     gateway.js 的 CLOUD_CONFIG.endpoint / publishableKey / ACCESS_KEY */
 export let cloudLlm = null;
 function initCloudLlm() {
   if (!window.WorkBuddyCloud) return null;

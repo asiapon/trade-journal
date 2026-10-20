@@ -9,11 +9,17 @@ import { NetLog } from '../core/netlog.js';
    云服务激活后由平台下发 publicConfig，前端只用 endpoint + publishableKey
    （publishableKey 仅标识应用、本身不带权限，服务端按 Origin 精确校验）。
    注意 endpoint 必须等于应用的发布域名，不可硬编码其它地址，
-   否则登录与数据请求会因 Origin 不匹配被服务端拒绝。 */
+   否则登录与数据请求会因 Origin 不匹配被服务端拒绝。
+
+   v3.20.1 换应用后更新：旧应用的 wbapp_QlBVRyRFlasNv8qKmoWHMl 已删除，
+   域名与 publishableKey 全部失效（表现为「云服务未启用」）。
+   现值对应 wbapp_kQybJuiH2NW1ZZKop1t8Wz（2026-10-20 重建）。
+   endpoint 在 http(s) 下会被 CLOUD_HOST 用 location.origin 覆盖，
+   只有 file:// 兜底时才用到这里的值 —— 但发布域名变了它也要跟着改。 */
 export const CLOUD_CONFIG = {
-  endpoint: 'https://trade-journal-55799.app.workbuddy.host',
+  endpoint: 'https://trade-journal-81772.app.workbuddy.host',
   oauthRelayBaseUrl: 'https://www.workbuddy.cn/v2/as/genie-baas/oauth',
-  publishableKey: 'wbpk_QlBVRyRFlasNv8qKmoWHMl_sRhD55FQPV7Zzy1XpZ2gzICGWd1FDhUg',
+  publishableKey: 'wbpk_kQybJuiH2NW1ZZKop1t8Wz_k2W7IBwvYl14bP5ypc2ZPdLAZ15109Yz',
 };
 
 /* 云库兜底地址：仅在 `file://`（无同源可用）时才会用到。
@@ -42,7 +48,10 @@ export const BACKEND_URL = (() => {
 export const RPC_BASE = (location.protocol === 'file:')
   ? (BACKEND_URL || CLOUD_HOST) + '/.cloud/database/rest/rpc'
   : (BACKEND_URL ? BACKEND_URL + '/.cloud/database/rest/rpc' : '/.cloud/database/rest/rpc');
-export const ACCESS_KEY = 'wbpk_mtCmnoJVwocZG4iRlx6CMe_NtYKw83A5VMgiaYhXnfV80AIGKO1rMbm';
+/* 请求头 x-wb-webapp-access-key 用的 key。
+   必须与 CLOUD_CONFIG.publishableKey 一致 —— 它标识应用，
+   原来是更早一版的硬编码值，换应用后一直被服务端按 Origin/Key 拒绝。 */
+export const ACCESS_KEY = CLOUD_CONFIG.publishableKey;
 /* 云端 LLM（免密钥）：模型目录 + 对话调用，与旧版 trade-manager 同一通道 */
 export const TABLES = ['trades', 'watchlist', 'quotes', 'settings', 'op_logs', 'qa_history'];
 

@@ -23,9 +23,6 @@ scripts/
 │   ├── status.mjs      Worker / D1 / 表行数 / RPC 探测
 │   ├── logs.mjs        实时日志
 │   └── remove.mjs      删除（危险）
-├── wb/               WorkBuddy 通道
-│   ├── sync.mjs        构建 + 同步到发布暂存目录
-│   └── status.mjs      暂存目录与 dist 一致性检查
 ├── self/             自托管通道
 │   ├── deploy.mjs      把 dist 同步到服务器（rsync/scp）
 │   ├── linux/          服务器端脚本 × 11
@@ -38,24 +35,28 @@ scripts/
 
 ---
 
-## 日常只用两个入口
+## 怎么跑
+
+统一入口 `scripts/cli.mjs`，在仓库根执行：
 
 ```bash
-# Windows
-publish.bat                     # 菜单
-publish.bat cf deploy
-
-# Linux / macOS / Git Bash
-./publish.sh                    # 菜单
-./publish.sh cf deploy
-
-# 等价写法
-node scripts/cli.mjs cf deploy
-npm run deploy:cf
+node scripts/cli.mjs                    # 交互菜单
+node scripts/cli.mjs cf deploy          # 发布到 Cloudflare
+node scripts/cli.mjs self status        # 自托管服务状态
+node scripts/cli.mjs help               # 完整命令列表
 ```
 
-根目录的 `publish.bat` / `publish.sh` 只做三件事：查 node、给菜单、转发到
-`scripts/cli.mjs`，不含业务逻辑。
+或用 npm 快捷方式（更短）：
+
+```bash
+npm run deploy:cf
+npm run self:status
+npm run check
+```
+
+> 根目录不再放 `publish.bat` / `publish.sh` 这类转发脚本 ——
+> 它们只是把命令转给 `cli.mjs`，多一层没必要。直接调 cli 或 npm script 即可，
+> 两个平台写法一致。
 
 ---
 

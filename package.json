@@ -19,7 +19,6 @@
     "publish:local": "node scripts/cli.mjs dev preview",
 
     "deploy:cf": "node scripts/cli.mjs cf deploy",
-    "deploy:wb": "node scripts/cli.mjs wb sync",
     "deploy:self": "node scripts/cli.mjs self deploy",
 
     "cf:bootstrap": "node scripts/cli.mjs cf bootstrap",
@@ -35,10 +34,7 @@
     "self:logs": "node scripts/cli.mjs self logs",
     "self:backup": "node scripts/cli.mjs self backup",
     "self:restore": "node scripts/cli.mjs self restore",
-    "self:uninstall": "node scripts/cli.mjs self uninstall",
-
-    "wb:sync": "node scripts/cli.mjs wb sync",
-    "wb:status": "node scripts/cli.mjs wb status"
+    "self:uninstall": "node scripts/cli.mjs self uninstall"
   },
   "devDependencies": {
     "vite": "^6.0.0",

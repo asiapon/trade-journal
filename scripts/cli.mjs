@@ -14,12 +14,17 @@
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { REPO, SCRIPTS, IS_WIN, DIST, WB_DIR, exists, dbIdMismatch } from './lib/paths.mjs';
+import { REPO, SCRIPTS, IS_WIN, DIST, exists, dbIdMismatch } from './lib/paths.mjs';
 import { loadEnvFile } from './lib/env.mjs';
 import { C, title, step, ok, warn, info, kv, footer, die } from './lib/ui.mjs';
 
 /* ============================================================
    通道 → 操作 定义
+   ------------------------------------------------------------
+   只有两条：cf（Cloudflare）与 self（自托管）。
+   WorkBuddy 托管通道已于 v3.20 移除 —— 它的发布动作只能在客户端
+   界面里点（或对话里调发布工具），没有命令行凭证，无法做成脚本；
+   留着 sync 命令反而会让人误以为跑完就上线了。
    ============================================================ */
 const CF_OPS = {
   bootstrap: { desc: '首次：建 D1 库 + 远端建表', file: 'cf/bootstrap.mjs' },
@@ -27,11 +32,6 @@ const CF_OPS = {
   status: { desc: 'Worker / D1 / 表数据量 / RPC 探测', file: 'cf/status.mjs' },
   logs: { desc: '实时日志（--once 只抓一小段）', file: 'cf/logs.mjs' },
   remove: { desc: '删除 Worker + D1（数据丢失，需确认）', file: 'cf/remove.mjs' },
-};
-
-const WB_OPS = {
-  sync: { desc: '构建 + 同步到发布暂存目录', file: 'wb/sync.mjs' },
-  status: { desc: '检查暂存目录与 dist 是否一致', file: 'wb/status.mjs' },
 };
 
 const SELF_OPS = {
@@ -108,7 +108,6 @@ function printHelp() {
     '需要 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID（写在 .env.local）');
   block('self', '自托管服务器 —— 完整运维（安装到卸载）', SELF_OPS,
     IS_WIN ? '当前平台 Windows：脚本在 scripts/self/windows/' : '当前平台 Linux/macOS：脚本在 scripts/self/linux/');
-  block('wb', 'WorkBuddy 托管 —— 半自动（仍需界面点发布）', WB_OPS);
 
   console.log(`  ${C.b('开发')}  ${C.d('(dev)')}`);
   console.log(`    ${pad('serve', 12)} 本地开发服务器（热更新，localhost:5173）`);
@@ -121,10 +120,9 @@ function printHelp() {
     C.d('示例：'),
     '  node scripts/cli.mjs cf status',
     '  node scripts/cli.mjs self backup',
-    '  node scripts/cli.mjs wb sync',
     '',
-    C.d('也可以直接用封装脚本：') + ' publish.bat check  /  ./publish.sh check',
-    C.d('完整文档：') + ' scripts/OPS.md',
+    C.d('npm 快捷方式：') + ' npm run cf:status  /  npm run self:backup',
+    C.d('完整文档：') + '   scripts/OPS.md',
   ]);
 }
 
@@ -144,8 +142,7 @@ async function menu() {
     5) 自托管      状态 / 日志
     6) 自托管      备份 / 恢复
     7) 自托管      卸载
-    8) WorkBuddy   同步发布目录
-    9) 体检 + 本地预览
+    8) 体检 + 本地预览
     h) 完整帮助
     0) 退出
 `);
@@ -159,8 +156,7 @@ async function menu() {
     5: ['self', 'status'],
     6: ['self', 'backup'],
     7: ['self', 'uninstall'],
-    8: ['wb', 'sync'],
-    9: ['dev', 'preview'],
+    8: ['dev', 'preview'],
   };
 
   if (sel === '0') return;
@@ -197,9 +193,12 @@ async function dispatch(channel, op, argv = []) {
       return;
     }
     case 'wb': {
-      const def = WB_OPS[op];
-      if (!def) die(`WorkBuddy 没有「${op}」。可用：${Object.keys(WB_OPS).join(' / ')}`);
-      await runModule(def.file, argv);
+      /* 通道已停用，给明确指引而不是「未知通道」，避免用户以为是打错字 */
+      die(
+        'WorkBuddy 托管通道已移除。\n' +
+        '  原因：它的发布动作只能在客户端界面里点，没有命令行凭证，无法脚本化。\n' +
+        '  要云端发布请用：node scripts/cli.mjs cf deploy（Cloudflare，纯命令行）',
+      );
       return;
     }
     case 'self': {
@@ -269,7 +268,6 @@ function overview() {
   rows.push(['仓库', REPO]);
   rows.push(['平台', IS_WIN ? 'Windows' : process.platform]);
   rows.push(['dist', exists(path.join(DIST, 'index.html')) ? '已构建' : C.d('未构建')]);
-  rows.push(['暂存目录', exists(WB_DIR) ? '已同步' : C.d('未生成')]);
   const mm = dbIdMismatch();
   rows.push(['CF 配置', mm ? C.y('两份 database_id 不一致') : C.d('未检查/一致')]);
   rows.push(['CF 凭据', process.env.CLOUDFLARE_API_TOKEN ? '已配置' : C.d('未配置（cf 通道不可用）')]);

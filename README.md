@@ -39,29 +39,28 @@ npm run preview   # 预览构建产物
 
 ## 发布与运维
 
-**最省事：双击 `publish.bat`（Windows）或跑 `./publish.sh`（Linux/macOS）**，
-弹菜单选编号即可。所有实现都在 `scripts/` 下。
+所有脚本在 `scripts/` 下，统一入口是 `scripts/cli.mjs`：
 
 ```bash
-./publish.sh check              # 体检：构建 + 产物校验 + 测试
-./publish.sh cf deploy          # 发布到 Cloudflare Workers + D1（纯命令行上线）
-./publish.sh self install       # 在服务器上安装/升级自托管服务
-./publish.sh self status        # 服务状态
-./publish.sh wb sync            # 同步 WorkBuddy 发布目录（仍需界面点发布）
-./publish.sh help               # 完整命令列表
+node scripts/cli.mjs check            # 体检：构建 + 产物校验 + 测试
+node scripts/cli.mjs cf deploy        # 发布到 Cloudflare Workers + D1（纯命令行上线）
+node scripts/cli.mjs self install     # 在服务器上安装/升级自托管服务
+node scripts/cli.mjs self status      # 服务状态
+node scripts/cli.mjs help             # 完整命令列表
 ```
 
-等价写法：`node scripts/cli.mjs <通道> <操作>`，另有 `npm run cf:status`、
-`npm run self:backup` 等快捷方式。
+也有一批 npm 快捷方式：`npm run check`、`npm run deploy:cf`、`npm run self:backup`、
+`npm run cf:status` 等，完整列表见 `package.json` 的 `scripts`。
 
-凭据写在仓库根 `.env.local`（菜单里「生成凭据」会创建模板），
-脚本启动时自动加载。该文件已被 git 忽略。
+凭据写在仓库根 `.env.local`，脚本启动时自动加载。该文件已被 git 忽略。
 
 | 通道 | 纯命令行 | 数据库 | 独有能力 |
 |---|:---:|---|---|
 | Cloudflare | ✅ | D1 | — |
 | 自托管 | ✅ | PostgreSQL | Python 技能包、服务端日志、定时采集 |
-| WorkBuddy | ❌ 需界面 | 云库 | — |
+
+> WorkBuddy 托管的发布动作只能在客户端界面里点，无法脚本化，
+> 相关命令已于 v3.20 移除（前端的云服务适配代码仍保留，见 `deploy/DEPLOY.md`）。
 
 自托管提供完整运维脚本（Linux + Windows 双平台）：
 安装 / 启动 / 停止 / 重启 / 状态 / 日志 / 备份 / 恢复 / 卸载 / 重置库 / 重置 PG 密码。

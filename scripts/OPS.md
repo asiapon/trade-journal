@@ -1,7 +1,7 @@
 # 运维手册
 
-> 所有运维操作都在这里。三条通道、每种操作、命令与前置条件，一页看完。
-> 不想记命令就双击 `publish.bat`（Windows）或跑 `./publish.sh`，弹菜单选编号。
+> 所有运维操作都在这里。两条通道（Cloudflare / 自托管）、每种操作、命令与前置条件，一页看完。
+> 不带参数跑 `node scripts/cli.mjs` 会出交互菜单。
 
 ---
 
@@ -9,7 +9,6 @@
 
 ```
 trade-journal/
-├── publish.bat / publish.sh     ← 总入口：菜单 + 转发，不含逻辑
 ├── wrangler.toml                ← Cloudflare 自动构建必需（根目录，勿删）
 ├── .env.local                   ← 凭据（git 忽略，自己创建）
 │
@@ -18,7 +17,6 @@ trade-journal/
 │   ├── OPS.md                   ← 本手册
 │   ├── lib/                     ← 共用：路径、输出、构建、env 加载
 │   ├── cf/                      ← Cloudflare 通道（5 个操作）
-│   ├── wb/                      ← WorkBuddy 通道（2 个操作）
 │   ├── self/
 │   │   ├── deploy.mjs           ← 把 dist 同步到服务器
 │   │   ├── linux/               ← 服务器端脚本（11 个操作）
@@ -52,19 +50,18 @@ trade-journal/
 ## 入口：两种写法完全等价
 
 ```bash
-# 封装脚本（推荐，短）
-./publish.sh cf status          # Windows: publish.bat cf status
-
-# 直接调 CLI（等价）
-node scripts/cli.mjs cf status
+node scripts/cli.mjs cf status    # 完整写法，任何平台一致
+npm run cf:status                 # npm 快捷方式，更短
 ```
 
-npm 也有一批快捷方式：`npm run cf:status`、`npm run self:backup`、`npm run wb:sync` 等，
-完整列表见 `package.json` 的 `scripts`。
+npm 快捷方式覆盖了全部常用操作（`cf:status`、`cf:bootstrap`、`deploy:cf`、
+`self:backup`、`self:logs` 等），完整列表见 `package.json` 的 `scripts`。
+
+不带参数跑 `node scripts/cli.mjs` 会出交互菜单。
 
 ---
 
-## 通道一：Cloudflare Workers + D1（唯一纯命令行上线）
+## 通道一：Cloudflare Workers + D1（云端发布，纯命令行）
 
 **前置**：`.env.local` 里配 `CLOUDFLARE_API_TOKEN` 与 `CLOUDFLARE_ACCOUNT_ID`。
 Token 需要 `Workers Scripts:Edit` + `D1:Edit` 权限。
@@ -145,16 +142,17 @@ node scripts/cli.mjs self deploy --no-build   # 用现有 dist，不重新构建
 
 ---
 
-## 通道三：WorkBuddy 托管（半自动）
+## 关于 WorkBuddy 托管通道（已移除）
 
-**这条通道无法纯命令行上线**，只能准备文件，必须在界面点一次「发布」。
+v3.20 之前有一条 `wb sync` 命令，把产物拷到 WorkBuddy 的发布暂存目录。
+**该通道已删除**，原因：
 
-| 操作 | 命令 | 说明 |
-|---|---|---|
-| 同步 | `wb sync` | 构建 → 清空暂存目录 → 拷入 dist |
-| 状态 | `wb status` | 对比暂存目录与 dist 的文件数/时间，告诉你需不需要重新 sync |
+- 发布动作只能在客户端界面点「发布」，没有命令行凭证，无法脚本化；
+- `wb sync` 只准备文件、不上线，容易被误认为「执行完就发布了」；
+- 前端的云服务适配代码（`src/storage/cloud-adapter.js`）**仍然保留** ——
+  它负责运行时自动探测后端类型，与发布方式无关。
 
-暂存目录：`C:/lyz/workspace/trade-journal-app`（在仓库外，可随时删除重建）。
+要云端发布，用 Cloudflare 通道（`cf deploy`），一条命令真正上线。
 
 ---
 
@@ -188,9 +186,9 @@ SELF_PATH=/opt/stockjournal/dist
 ```
 
 - 已被 `.gitignore` 忽略，不会提交
-- `publish.bat` / `publish.sh` / `scripts/cli.mjs` 启动时**自动加载**
+- `scripts/cli.mjs` 启动时**自动加载**
 - 已存在的环境变量优先，不会被文件覆盖（CI 里 export 的凭据安全）
-- 生成模板：`./publish.sh` 选 12，或 `node scripts/cli.mjs dev env`
+- 生成模板：`node scripts/cli.mjs dev env`
 
 ---
 

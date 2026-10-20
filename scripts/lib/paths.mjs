@@ -8,7 +8,6 @@
      SCRIPTS   脚本根          <REPO>/scripts        ← 本文件所在目录的上一级
      SELFHOST  自托管后端运行时 <REPO>/deploy/selfhost   ← server.js 在这，位置不可移
      CFDIR     Cloudflare 代码 <REPO>/deploy/cloudflare  ← wrangler 主配置指向这
-     WB_DIR    WorkBuddy 暂存   <仓库外>/trade-journal-app
 
    为什么 deploy/ 不能挪：server.js 里 `path.join(__dirname,'..','..','dist')`
    硬指仓库根两级 —— 它 serve 的是构建产物（dist/index.html 里引用带 hash 的
@@ -30,9 +29,6 @@ export const DEPLOY = path.join(REPO, 'deploy');
 export const SELFHOST = path.join(DEPLOY, 'selfhost');
 export const CFDIR = path.join(DEPLOY, 'cloudflare');
 export const SCRIPTS = path.join(REPO, 'scripts');
-
-/** WorkBuddy 发布暂存目录：在仓库外，可随时删除重建 */
-export const WB_DIR = 'C:/lyz/workspace/trade-journal-app';
 
 /** 两份 wrangler 配置 —— 必须保持 database_id 一致 */
 export const TOML_CF = path.join(CFDIR, 'wrangler.toml');       // 本地发布用（显式 -c）

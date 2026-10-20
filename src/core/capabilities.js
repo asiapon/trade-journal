@@ -3,6 +3,7 @@
    ② 探测不到时按环境兜底推断：WorkBuddy 静态托管 = 无服务端能力；
       未知自托管 → 探 /api/pack/list（Python 技能）与 /api/logs/tail（日志，须 JSON）。
    结果缓存 localStorage 10 分钟（键随后端 base 变化）。 */
+import { CLOUD_CONFIG } from '../storage/gateway.js';
 
 const CAPS_KEY = 'sj_caps_v1';
 const RPC_TAIL = '/.cloud/database/rest/rpc';
@@ -10,7 +11,7 @@ const RPC_TAIL = '/.cloud/database/rest/rpc';
 export function backendBase() {
   try {
     const be = String(localStorage.getItem('sj_backend_url') || '').trim().replace(/\/+$/, '');
-    if (location.protocol === 'file:') return (be || 'https://trade-journal-55799.app.workbuddy.host');
+    if (location.protocol === 'file:') return (be || CLOUD_CONFIG.endpoint);
     return be || '';
   } catch (e) { return ''; }
 }
