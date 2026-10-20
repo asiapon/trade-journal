@@ -37,28 +37,25 @@ npm run build     # 构建 → dist/
 npm run preview   # 预览构建产物
 ```
 
-## 发布
+## 发布与运维
 
-**最省事的方式：双击 `publish.bat`（Windows）或跑 `./publish.sh`（Linux/macOS）**，
-弹菜单选序号即可，不用记命令、不用打开 WorkBuddy。
-
-| 系统 | 脚本 | 说明 |
-|---|---|---|
-| Windows | `publish.bat` | 双击运行；末尾加 `--no-pause` 可供脚本调用 |
-| Linux/macOS/Git Bash | `publish.sh` | `chmod +x` 已设置好 |
-
-凭据写在仓库根 `.env.local`（跑一次菜单里的「生成凭据」会创建模板），
-两个脚本启动时自动加载。该文件已被 git 忽略。
-
-也可以直接用命令行入口 `scripts/publish.mjs`，会先构建 → 校验产物 → 跑测试，任一失败即中止：
+**最省事：双击 `publish.bat`（Windows）或跑 `./publish.sh`（Linux/macOS）**，
+弹菜单选编号即可。所有实现都在 `ops/` 下。
 
 ```bash
-npm run publish:check    # 只体检不发布
-npm run publish:cf       # Cloudflare Workers + D1 ← 纯命令行，推荐
-npm run publish:self     # 自托管（需要 SELF_HOST=user@host）
-npm run deploy:wb        # 同步到 WorkBuddy 发布目录（仍需界面点发布）
-npm run publish:local    # 本地构建 + 预览
+./publish.sh check              # 体检：构建 + 产物校验 + 测试
+./publish.sh cf deploy          # 发布到 Cloudflare Workers + D1（纯命令行上线）
+./publish.sh self install       # 在服务器上安装/升级自托管服务
+./publish.sh self status        # 服务状态
+./publish.sh wb sync            # 同步 WorkBuddy 发布目录（仍需界面点发布）
+./publish.sh help               # 完整命令列表
 ```
+
+等价写法：`node ops/cli.mjs <通道> <操作>`，另有 `npm run cf:status`、
+`npm run self:backup` 等快捷方式。
+
+凭据写在仓库根 `.env.local`（菜单里「生成凭据」会创建模板），
+脚本启动时自动加载。该文件已被 git 忽略。
 
 | 通道 | 纯命令行 | 数据库 | 独有能力 |
 |---|:---:|---|---|
@@ -66,9 +63,13 @@ npm run publish:local    # 本地构建 + 预览
 | 自托管 | ✅ | PostgreSQL | Python 技能包、服务端日志、定时采集 |
 | WorkBuddy | ❌ 需界面 | 云库 | — |
 
+自托管提供完整运维脚本（Linux + Windows 双平台）：
+安装 / 启动 / 停止 / 重启 / 状态 / 日志 / 备份 / 恢复 / 卸载 / 重置库 / 重置 PG 密码。
+
 **同一份 `dist/` 可上任意环境**：前端启动时自动探测当前后端类型
 （有 RPC 端点走 18 函数 RPC，否则走平台云服务 PostgREST），无需分别打包。
 登录方式统一为用户名 + 密码。
 
-详见 [deploy/DEPLOY.md](deploy/DEPLOY.md)。
+- 运维手册：[ops/README.md](ops/README.md)
+- 部署物说明：[deploy/DEPLOY.md](deploy/DEPLOY.md)
 

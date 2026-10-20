@@ -9,9 +9,14 @@ deploy/cloudflare/.wrangler/
 !.env.example
 .env.local
 !.env.*.example
-# 发布暂存快照（在仓库外，由 scripts/sync-wb.mjs 生成，可随时重建）
+# 发布暂存快照（在仓库外，由 ops wb sync 生成，可随时重建）
 .workbuddy/backup/
 # WorkBuddy 本地状态与云服务激活标记（含 appId，不入版本库）
 .workbuddy/
 .wbapp_*.genie
+# 自托管备份产物（数据库 dump 里有全部记账数据，绝不入版本库）
+backups/
+# 自托管运行时残留
+.pid
+deploy/selfhost/.pid
 
