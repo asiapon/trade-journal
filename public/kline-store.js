@@ -138,12 +138,23 @@ const KLib = {
     return last;
   },
   async targetDate() {
-    const k = await fetchKlineEast('600519', 101, 5);
-    const b = (k && k.bars) || [];
-    if (!b.length) throw new Error('无法确定最新交易日（参考票 K 线未返回）');
-    const d = this.pickClosed(b);
-    if (!d) throw new Error('无法确定最新已收盘交易日（参考票数据不足）');
-    return d;
+    /* v3.18.5 东财被风控/断网时降级腾讯取锚定票（旧写法只走东财，东财一挂整条日K链路死）。
+       锚定票茅台两家接口都有；pickClosed 的盘中半根规则两家同样适用。 */
+    try {
+      const k = await fetchKlineEast('600519', 101, 5);
+      const b = (k && k.bars) || [];
+      if (b.length) {
+        const d = this.pickClosed(b);
+        if (d) return d;
+      }
+    } catch (e) { /* 降级腾讯 */ }
+    let k2 = null;
+    try { k2 = await fetchKlineTx('600519', 'day', 5); } catch (e) { throw new Error('无法确定最新交易日（东财+腾讯均不可用：' + (e.message || e) + '）'); }
+    const b2 = (k2 && k2.bars) || [];
+    if (!b2.length) throw new Error('无法确定最新交易日（东财+腾讯锚定票均未返回）');
+    const d2 = this.pickClosed(b2);
+    if (!d2) throw new Error('无法确定最新已收盘交易日（参考票数据不足）');
+    return d2;
   },
   /* 单只：东财优先（带成交额），腾讯兜底（无成交额 → 按 (O+H+L+C)/4×量 近似，入库时注明口径）。
      统一输出紧凑数组 [d,o,c,h,l,v,a] —— 库里只存这一种形状，算量/排序都吃数组。 */
