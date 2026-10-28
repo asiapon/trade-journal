@@ -8,7 +8,7 @@ import { emQuote, txQuote } from '../sources/quotes.js';
 import { ACCESS_KEY, BACKEND_URL, CLOUD_HOST, RPC_BASE, TABLES, cloudStore, loadAll, localStore, rpc, saveSetting, sessionHooks, setStore, storageHooks, store } from '../storage/gateway.js';
 import { S } from '../core/app-state.js';
 import { U } from '../core/ui-state.js';
-import { cloudLlm } from '../app.js';
+
 import { llmComplete, nowStr } from './llm.js';
 import { feeOpenIds, stockDetailRow, stockOpenCodes } from './overview.js';
 import { ModelMgr, NetQuote, refreshQuotes } from './quotes.js';
@@ -269,7 +269,11 @@ export async function aiParseEntry(inputId, hintId) {
   el.hidden = false;
   el.className = 'quick-hint';
   const model = ModelMgr.cur;
-  const aiReady = model && (model.custom || cloudLlm);
+  /* v3.21.0：判据从 `model.custom || cloudLlm` 改为「选了模型就算就绪」。
+     原因：本地部署时 cloudLlm 恒为 null（Origin 限制），但后端代理仍然可用，
+     旧判据会让 AI 入口在本地部署下彻底禁用 —— 即使模型和代理都配好了。
+     真正不可用时，下面的 catch 会退回本地规则并说明原因，不会卡住用户。 */
+  const aiReady = !!model;
   if (!aiReady) {
     const res = parseTradeText(raw);
     if (!res) {

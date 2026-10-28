@@ -220,10 +220,25 @@ export const ModelMgr = {
     if (S.mode === 'cloud') saveSetting('model_custom', JSON.stringify(this.custom)).catch(() => {});
   },
   async reload() {
-    if (!cloudLlm) throw new Error('云端模型服务不可用（本地模式）');
-    const llm = cloudLlm.llm || cloudLlm;   // SDK 命名空间：cloud.llm.models / cloud.llm.chat
-    const listed = (await llm.models.list()) || [];
-    this.platform = listed.filter(m => m.disabled !== true);
+    /* 模型目录来源两条路（v3.21.0）：
+       ① 云端同源 → SDK 的 llm.models.list()
+       ② 本地部署 → 后端 /api/llm/models（后端代持 key 透传，见 server.js）
+       以前这里 `if (!cloudLlm) throw`，导致自托管下连模型列表都拉不到，
+       用户压根没机会选云端模型 —— 降级链也就永远不会被触发。 */
+    let listed = [];
+    if (cloudLlm) {
+      const llm = cloudLlm.llm || cloudLlm;   // SDK 命名空间：cloud.llm.models / cloud.llm.chat
+      listed = (await llm.models.list()) || [];
+    } else {
+      const r = await fetch(BACKEND_URL + '/api/llm/models', { headers: sjTokenHeaders() });
+      if (!r.ok) {
+        let msg = '云端模型服务不可用（本地模式，后端未配置 LLM 代理）';
+        try { const j = await r.json(); if (j && j.msg) msg = j.msg; } catch (e) { /* 非 JSON */ }
+        throw new Error(msg);
+      }
+      const j = await r.json();
+      listed = (j && j.models) || [];
+    }
     this.platform = listed.filter(m => m.disabled !== true);
     this.loaded = true;
     localStorage.setItem('sj_model_list', JSON.stringify(this.platform));

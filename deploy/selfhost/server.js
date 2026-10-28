@@ -38,6 +38,23 @@ const DATABASE_URL = process.env.DATABASE_URL || '';
 const REQUIRE_KEY = process.env.REQUIRE_KEY === '1';
 const ACCESS_KEY = process.env.ACCESS_KEY || '';
 
+/* ---------- 云端 LLM 代理（v3.21.0） ----------
+   背景：WorkBuddy 的免密模型走 /.cloud/llm/*，前端直连时因「Origin 必须等于
+   应用域名」被拒 —— 本地部署（localhost）用不了。但服务端发请求没有 Origin
+   限制，只带 x-wb-webapp-access-key 即可通过（已实测 200）。
+   所以由后端代持 key 做透传，本地部署也能用平台积分跑模型。
+
+   依赖：LLM_ENDPOINT（应用域名）+ LLM_KEY（该应用的 publishableKey）
+   注意：两者都绑在「那个 WorkBuddy 应用」上 —— 应用删除或下线，这里就失效，
+        前端会自动降级到自定义模型（见 src/features/llm.js）。
+   key 只在服务端，绝不返回给浏览器。 */
+const LLM_ENDPOINT = (process.env.LLM_ENDPOINT || '').replace(/\/+$/, '');
+const LLM_KEY = process.env.LLM_KEY || '';
+const LLM_ON = !!(LLM_ENDPOINT && LLM_KEY);
+if (LLM_ENDPOINT && !LLM_KEY) {
+  console.warn('⚠ 配了 LLM_ENDPOINT 但缺 LLM_KEY，云端模型代理不会启用');
+}
+
 /* RPC 函数白名单：与 schema.sql 一一对应，陌生函数名直接 404 */
 const ALLOWED_FN = new Set([
   'app_has_users', 'app_setup_admin', 'app_login', 'app_logout', 'app_change_pwd',
@@ -50,12 +67,65 @@ if (!DATABASE_URL) {
   console.warn('⚠ 未配置 DATABASE_URL（deploy/.env），RPC 将返回 500；静态页面仍可访问。');
 }
 const pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL, max: 20 }) : null;
+
+/* ---------- 版本敏感函数的启动自检（v3.21.2） ----------
+   为什么需要：schema.sql 改了但已有库没重跑，会出现「代码是新的、库是旧的」，
+   表现为前端打开就静默落入本地模式（boot 的 catch 吞掉所有异常）。
+   2026-10-20 就因此排查了两轮。这里在启动时比对签名，不对就自动升级 ——
+   这几个函数无状态，重建没有副作用。
+
+   注意：常量与函数定义必须写在下面的调用之前，否则 async 函数体会在
+   第一个 await 之前同步访问到 TDZ 中的 const（首次实现就踩了这个坑：
+   "Cannot access 'EXPECTED_RET' before initialization"）。 */
+
+/* 期望签名：函数名 → 必须的返回类型。新增版本敏感变更时在这里登记。 */
+const EXPECTED_RET = { app_has_users: 'jsonb' };
+
+/* app_has_users 从 boolean 改为 jsonb 的具体迁移（旧版返回裸值会让 hasUsers() 抛异常） */
+const FIX_APP_HAS_USERS = `
+DROP FUNCTION IF EXISTS public.app_has_users();
+CREATE OR REPLACE FUNCTION public.app_has_users()
+ RETURNS jsonb
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$ SELECT jsonb_build_object('ok', true, 'data', EXISTS (SELECT 1 FROM app_users)) $function$;
+`;
+
+async function ensureSchemaCompat() {
+  const names = Object.keys(EXPECTED_RET);
+  const r = await pool.query(
+    `SELECT p.proname AS name, pg_get_function_result(p.oid) AS ret
+       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public' AND p.proname = ANY($1::text[])`,
+    [names],
+  );
+  const actual = new Map(r.rows.map((x) => [x.name, x.ret]));
+  for (const [name, want] of Object.entries(EXPECTED_RET)) {
+    const got = actual.get(name);
+    if (got === want) continue;
+    if (!got) {
+      console.warn(`⚠ 数据库缺函数 ${name}（可能是旧库），请重跑 deploy/selfhost/schema.sql`);
+      continue;
+    }
+    if (name === 'app_has_users') {
+      console.warn(`⚠ ${name} 返回类型为 ${got}，应为 ${want} → 自动升级（否则前端会静默落入本地模式）`);
+      await pool.query(FIX_APP_HAS_USERS);
+      console.log(`✓ ${name} 已升级为 ${want}`);
+    } else {
+      console.warn(`⚠ ${name} 返回类型为 ${got}，应为 ${want}，请重跑 schema.sql`);
+    }
+  }
+}
+
 if (pool) {
   pool.query('SELECT current_user AS u').then(r => {
     console.log('✓ 数据库自检: current_user =', r.rows[0].u, '| 连接串掩码:', DATABASE_URL.replace(/:[^:@/]+@/, ':***@'));
   }).catch(e => {
     console.error('✗ 数据库自检失败:', e.message, '| 原始串:', JSON.stringify(DATABASE_URL));
   });
+
+  ensureSchemaCompat().catch((e) => console.error('✗ schema 自检失败:', e.message));
 }
 
 /* 函数参数名：从 pg_catalog 现取（与建库 DDL 永远一致，不用手维护清单）。
@@ -95,7 +165,96 @@ app.get('/api/capabilities', (req, res) => res.json({
   asr: !!process.env.ASR_API_KEY,
   asrTencent: !!(process.env.TENCENT_SECRET_ID && process.env.TENCENT_SECRET_KEY),
   syncCron: !!pool,
+  llm: LLM_ON,                    // 云端模型代理是否可用（前端据此决定是否尝试）
 }));
+
+/* ---------- 云端 LLM 代理 ---------- */
+/* 统一的上游调用：带 access key，不转发浏览器的 Origin（服务端无需它） */
+async function llmFetch(pathname, init = {}) {
+  const r = await fetch(LLM_ENDPOINT + pathname, {
+    ...init,
+    headers: {
+      'x-wb-webapp-access-key': LLM_KEY,
+      ...(init.headers || {}),
+    },
+  });
+  return r;
+}
+
+/* 模型列表：只回前端需要的字段，避免把内部信息（供应商代号等）透出去 */
+app.get('/api/llm/models', async (req, res) => {
+  if (!LLM_ON) return res.status(503).json({ ok: false, msg: '未配置云端模型（LLM_ENDPOINT/LLM_KEY）' });
+  try {
+    const r = await llmFetch('/.cloud/llm/models', { headers: { Accept: 'application/json' } });
+    if (!r.ok) return res.status(r.status).json({ ok: false, msg: '上游返回 ' + r.status });
+    const list = await r.json();
+    const models = (Array.isArray(list) ? list : [])
+      .filter((m) => m && m.enabled !== false)      // 与前端一致：只给可用模型
+      .map((m) => ({
+        id: m.id, name: m.name, credits: m.credits || '',
+        contextWindow: m.maxInputTokens || null,
+        supportsImages: !!m.supportsImages,
+        supportsToolCall: !!m.supportsToolCall,
+        description: m.descriptionZh || '',
+      }));
+    res.json({ ok: true, models });
+  } catch (e) {
+    res.status(502).json({ ok: false, msg: '拉取模型列表失败：' + e.message });
+  }
+});
+
+/* 对话：SSE 流式透传。浏览器 → 本地后端 → 云端，前端拿到的是同样的 SSE */
+app.post('/api/llm/chat/completions', express.json({ limit: '2mb' }), async (req, res) => {
+  if (!LLM_ON) return res.status(503).json({ ok: false, msg: '未配置云端模型（LLM_ENDPOINT/LLM_KEY）' });
+  if (REQUIRE_KEY && req.get('x-wb-webapp-access-key') !== ACCESS_KEY)
+    return res.status(401).json({ ok: false, msg: 'access key 不匹配' });
+
+  const body = req.body || {};
+  if (!body.model || !Array.isArray(body.messages)) {
+    return res.status(400).json({ ok: false, msg: '缺少 model 或 messages' });
+  }
+  /* 平台只支持流式；这里强制 stream=true，避免调用方忘了传导致上游报错 */
+  const payload = { ...body, stream: true };
+
+  let upstream;
+  try {
+    upstream = await llmFetch('/.cloud/llm/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    return res.status(502).json({ ok: false, msg: '连接云端模型失败：' + e.message });
+  }
+
+  /* 上游报错时它返回的是 JSON 而不是 SSE，这里如实转成 JSON 错误给前端 */
+  if (!upstream.ok) {
+    const t = await upstream.text().catch(() => '');
+    return res.status(upstream.status).json({ ok: false, msg: '云端模型返回 ' + upstream.status, detail: t.slice(0, 400) });
+  }
+  if (!upstream.body) {
+    return res.status(502).json({ ok: false, msg: '云端未返回流' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');   // 关掉 nginx 缓冲，否则流会攒着不下发
+  res.flushHeaders();
+
+  /* 浏览器中途关页面时，把上游流也断掉，别让请求在云端空跑扣积分 */
+  const { Readable } = require('stream');
+  const nodeStream = Readable.fromWeb(upstream.body);
+  req.on('close', () => { try { nodeStream.destroy(); } catch (e) { /* */ } });
+
+  nodeStream.on('error', (e) => {
+    if (!res.writableEnded) {
+      try { res.write(`data: ${JSON.stringify({ error: { message: '流中断：' + e.message } })}\n\n`); } catch (er) { /* */ }
+      res.end();
+    }
+  });
+  nodeStream.pipe(res);
+});
 app.get('/api/pack/list', (req, res) => res.json({ ok: true, packs: skillpack.list() }));
 app.post('/api/pack/install', async (req, res) => {
   try {

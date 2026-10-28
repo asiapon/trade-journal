@@ -16,7 +16,7 @@ export function backendBase() {
   } catch (e) { return ''; }
 }
 
-const DEFAULTS = { env: 'unknown', serverLogs: false, packExec: false, asr: false, asrTencent: false, syncCron: false };
+const DEFAULTS = { env: 'unknown', serverLogs: false, packExec: false, asr: false, asrTencent: false, syncCron: false, llm: false };
 
 function presetByOrigin() {
   if (location.protocol === 'file:' || location.hostname.endsWith('workbuddy.host')) {
@@ -38,6 +38,7 @@ async function probeEndpoint(base) {
     asr: !!j.asr,
     asrTencent: !!j.asrTencent,
     syncCron: !!j.syncCron,
+    llm: !!j.llm,      // 后端是否配了云端模型代理（LLM_ENDPOINT + LLM_KEY）
   };
 }
 

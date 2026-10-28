@@ -9,7 +9,7 @@ import { S } from '../core/app-state.js';
 import { jskillAgentTools, jskillExec } from './jskills.js';
 import { cloudLlm } from '../app.js';
 import { computeHoldings } from './journal.js';
-import { llmComplete } from './llm.js';
+import { llmComplete, backendLlmStream } from './llm.js';
 import { switchSetPane } from './me.js';
 import { ModelMgr } from './quotes.js';
 import { sjAsrTranscribe, sjCreateMic } from './voice.js';
@@ -195,7 +195,12 @@ export async function qaLlmStream(messages, { signal, onDelta } = {}) {
     }
     return text;
   }
-  if (!cloudLlm) throw new Error('云端模型服务不可用');
+  /* 云端模型：同源 SDK 优先；本地部署时同源 SDK 不可用（Origin 不是应用域名），
+     改走后端代理（v3.21.0）。以前这里直接 `throw 云端模型服务不可用`，
+     导致本地部署一进问答就失败 —— 记账解析能走 llmComplete，问答走的是本函数。 */
+  if (!cloudLlm) {
+    return backendLlmStream(m.id, messages, { signal, onDelta });
+  }
   const llm = cloudLlm.llm || cloudLlm;
   let text = '';
   for await (const chunk of llm.chat.completions.create({ model: m.id, messages, stream: true })) {
@@ -377,9 +382,19 @@ export async function qaLlmChat(messages, { tools, signal } = {}) {
     }
     return acc.done();
   }
-  if (!cloudLlm) throw new Error('云端模型服务不可用');
-  const llm = cloudLlm.llm || cloudLlm;
+  /* 云端模型：同源 SDK 优先；本地部署改走后端代理（v3.21.0）。
+     代理分支必须用 onDeltaRaw 收「完整 delta」——只给文本会把 tool_calls 丢掉，
+     Agent 工具回路就成了摆设（模型永远"没法自己查"，只能凭空回答）。 */
   const acc = mkAccum();
+  if (!cloudLlm) {
+    await backendLlmStream(m.id, messages, {
+      signal,
+      onDeltaRaw: acc.feed,
+      extraBody: tools && tools.length ? { tools } : null,
+    });
+    return acc.done();
+  }
+  const llm = cloudLlm.llm || cloudLlm;
   for await (const chunk of llm.chat.completions.create(Object.assign({ stream: true }, body))) {
     if (signal && signal.aborted) break;
     acc.feed(chunk.choices && chunk.choices[0] && chunk.choices[0].delta);
@@ -713,7 +728,7 @@ export function renderQaJump() {
         const t = qaUserMsgText(m).split('\n')[0].replace(/📎.*$/, '').trim() || '（附件提问）';
         return `<button type="button" class="qa-jump-item" data-uidx="${idx}" title="${esc(t)}">${esc(t.length > 42 ? t.slice(0, 42) + '…' : t)}</button>`;
       }).join('')
-      : '<div class="qa-jump-item" style="cursor:default">本会话还没有提问</div>';
+      : '<div class="qa-jump-empty">提问之后，这里会按顺序列出本会话的问题，点一下跳到对应回答。</div>';
 }
 export function bindQaJump() {
   const list = $('qaJumpList'), toggle = $('qaJumpToggle');

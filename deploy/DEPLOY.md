@@ -74,6 +74,7 @@ deploy/
 | 能力 | Cloudflare | 自托管 |
 |---|:---:|:---:|
 | 记账 / 自选 / 分析 / 问答 | ✅ | ✅ |
+| **WorkBuddy 免密模型**（消耗积分） | ❌ | ✅ 需配代理 |
 | Python 技能包 | ❌ | ✅ |
 | 服务端日志文件 | ⚠️ 存 D1 | ✅ |
 | 定时采集（每天 17:30） | ❌ | ✅ |
@@ -81,6 +82,43 @@ deploy/
 | 数据库 | D1 | PostgreSQL |
 
 设置页「环境能力」面板会按当前后端自动显示实际支持的能力。
+
+### 自托管为什么能用平台的免密模型（v3.21.0）
+
+云端 LLM 接口 `/.cloud/llm/*` 要求 **Origin 必须等于应用域名**，浏览器在
+`localhost` 直连会被拒。但**服务端发请求不受 Origin 限制**，只带
+`x-wb-webapp-access-key` 即可通过（实测 200）。
+
+所以自托管后端代持 key 做透传：
+
+```
+浏览器(本地) → 本地后端 /api/llm/chat/completions → 云端 /.cloud/llm/chat/completions
+```
+
+配置（`deploy/selfhost/.env`，两值都来自那个 WorkBuddy 应用）：
+
+```ini
+LLM_ENDPOINT=https://xxx.app.workbuddy.host
+LLM_KEY=wbpk_xxxxx
+```
+
+新增接口：
+
+| 接口 | 作用 |
+|---|---|
+| `GET /api/llm/models` | 模型目录（已过滤不可用项，只回前端需要的字段） |
+| `POST /api/llm/chat/completions` | SSE 流式透传，强制 `stream:true` |
+| `GET /api/capabilities` | 新增 `llm` 字段，前端据此判断 |
+
+**⚠ 依赖关系**：这两个值绑死在那个应用上。应用被删除或下线，代理立刻失效。
+前端会自动降级到「自定义模型」，不会卡住 —— 见 `src/features/llm.js` 的三级链：
+
+```
+① 同源 SDK（托管页面）→ ② 后端代理（本地部署）→ ③ 抛明确错误，提示切自定义模型
+```
+
+想彻底不依赖平台：用自定义模型（设置 → AI 模型 → 自定义），填 DeepSeek / 通义等
+OpenAI 兼容地址即可，几块钱能用很久。
 
 ### 关于平台云服务后端（保留但不作为发布通道）
 
