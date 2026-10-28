@@ -128,10 +128,21 @@ export function renderHoldings() {
     }
   }
   updateSortHead('#tvHoldTable', U.holdSort);
-  /* 报价时间提示（持仓页 + 总览页同步） */
+  /* 报价时间提示（持仓页 + 总览页同步）
+     v3.9.20 修复「指数有数、下面却写着行情未获取」的自相矛盾：
+     空账户（无持仓 + 无自选）时 merged.size === 0，quotes.js 里
+     `if (merged.size)` 把关，quoteTime 永远不会被赋值；而 fetchIdx()
+     是独立链路，照样把 6 个指数拉回来 → 屏幕上指数有价、提示说没拿到。
+     现在按「拿到哪一份就说哪一份」。 */
+  const hms = ts => {
+    const d = new Date(ts), p = n => String(n).padStart(2, '0');
+    return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  };
   const qtiTxt = NetQuote.quoteTime
     ? `行情报价时间 ${NetQuote.quoteTime}（${NetQuote.eastDeadUntil > Date.now() ? '腾讯备源' : '东财主源'}，缓存15秒）`
-    : '行情未获取';
+    : (NetQuote.idxTime
+      ? `指数更新于 ${hms(NetQuote.idxTime)} · 自选/持仓报价未获取`
+      : '行情未获取 · 点上方「刷新行情」重试');
   /* v3.8.37 持仓页下线：报价时间/指数条只有总览页一处挂载点 */
   ['tvQuoteTime'].forEach(id => {
     const el = document.getElementById(id); if (el) el.textContent = qtiTxt;

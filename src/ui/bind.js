@@ -688,41 +688,49 @@ export function bindEvents() {
      原 renderKlibStatUI / klibAutoChk / klibSyncBtn 绑定随之移除；
      KLib 打开应用时自动增量同步（autoSyncIfStale）不依赖该开关，保持默认开启 */
 
-  /* v3.18.0 静态数据中心：状态表 + 定时开关/时刻 + 全部/单数据集更新（设置 → 数据管理） */
+  /* v3.18.0 静态数据中心：状态表 + 定时开关/时刻 + 全部/单数据集更新（设置 → 数据管理）
+     v3.22.0 表格改为「条数 + 数据日期」两列 —— 原来只显示「上次更新」，
+     用户看不出数据到底是哪天的（昨天点过刷新、但数据只到前天是两回事）。 */
   async function renderDataHubUI() {
     const sum = $('dhSummary'), tbl = $('dhTable');
     if (!sum) return;
     if (typeof DataHub === 'undefined') { sum.textContent = '静态数据中心模块未加载'; return; }
-    /* 状态摘要：各数据集当前条数（内存态，即真实生效的数据） */
-    let dictN = 0, dictV = '?';
-    try {
-      dictN = Object.keys(StockDict.d).length;
-      const seed = JSON.parse(localStorage.getItem('sj_stock_dict_seed') || 'null');
-      dictV = (seed && seed.v) || '随应用打包';
-    } catch (e) { /* */ }
-    let boardN = 0, boardV = '?';
-    try {
-      boardN = (state.boardDict || []).length;
-      const bd = JSON.parse(localStorage.getItem('sj_board_dict_v1') || 'null');
-      boardV = (bd && bd.v) || '随应用打包';
-    } catch (e) { /* */ }
-    let kTxt = '未建立';
-    try {
-      const meta = (typeof KLib !== 'undefined') ? await KLib.metaGet().catch(() => ({})) : {};
-      if (meta.n) kTxt = meta.n + ' 只 · 到 ' + meta.targetDate;
-    } catch (e) { /* */ }
-    let wTxt = (DataHub._weekMap && DataHub._weekVer) ? ('已聚合 ' + DataHub._weekMap.size + ' 只 · 到 ' + DataHub._weekVer) : '按需聚合';
-    sum.textContent = `股票名录 ${dictN} 条（${dictV}）｜板块成分 ${boardN} 个（${boardV}）｜日K ${kTxt}｜周K ${wTxt}`;
+    let st = {};
+    try { st = await DataHub.stat(); } catch (e) { st = {}; }
     const last = DataHub.lastGet();
+    const thousands = n => (n || 0).toLocaleString('zh-CN');
+    /* 摘要一行：只放最关键的「有多少 / 到哪天」 */
+    const brief = k => {
+      const s = st[k] || {};
+      return s.n ? thousands(s.n) + (s.unit || '') + (s.date ? '（到 ' + s.date + '）' : '') : '未建立';
+    };
+    sum.textContent = `股票名录 ${brief('stocks')} ｜ 板块成分 ${brief('boards')}`
+      + ` ｜ 日K ${brief('kline')} ｜ 周K ${brief('week')}`;
+
+    const cellN = k => {
+      const s = st[k] || {};
+      if (!s.n) return '<span class="hint" style="margin:0">—</span>';
+      return '<b>' + thousands(s.n) + '</b> ' + esc(s.unit || '');
+    };
+    const cellDate = k => {
+      const s = st[k] || {};
+      const d = s.date ? esc(s.date) : '<span class="hint" style="margin:0">—</span>';
+      const src = s.src ? '<div class="hint" style="margin:0;font-size:11px">' + esc(s.src) + '</div>' : '';
+      return d + src;
+    };
     tbl.innerHTML = '<div class="table-wrap"><table class="batch-table"><thead><tr>'
-      + '<th>数据集</th><th>内容</th><th>上次更新</th><th></th>'
+      + '<th>数据集</th><th>条数</th><th>数据日期</th><th>上次执行</th><th></th>'
       + '</tr></thead><tbody>'
       + DataHub.DS.map(x => {
         const l = last[x.key];
-        const lt = !l ? '—' : (l.d + (l.ok ? '' : '（失败）'));
-        return '<tr><td><b>' + esc(x.label) + '</b></td><td class="hint" style="margin:0">' + esc(x.desc)
-          + '</td><td>' + esc(lt) + '</td>'
-          + '<td><button class="btn ghost sm" data-dh-ds="' + x.key + '" type="button">更新</button></td></tr>';
+        const lt = !l ? '<span class="hint" style="margin:0">从未</span>'
+          : (esc(l.d) + (l.ok ? '' : ' <span style="color:#e5534b">失败</span>'));
+        return '<tr><td><b>' + esc(x.label) + '</b>'
+          + '<div class="hint" style="margin:0;font-size:11px">' + esc(x.desc) + '</div></td>'
+          + '<td>' + cellN(x.key) + '</td>'
+          + '<td>' + cellDate(x.key) + '</td>'
+          + '<td>' + lt + '</td>'
+          + '<td><button class="btn ghost sm" data-dh-ds="' + x.key + '" type="button" title="重新从接口拉取并覆盖本地数据">刷新</button></td></tr>';
       }).join('')
       + '</tbody></table></div>';
   }
@@ -742,21 +750,29 @@ export function bindEvents() {
   });
   /* 全部更新 / 单数据集更新共用入口：busy 期间禁用按钮 + 进度落到按钮文字 */
   async function dhRun(keys, btn, busyText) {
-    if (typeof DataHub === 'undefined') return;
+    if (typeof DataHub === 'undefined') {
+      /* 原来这里直接 return，点了刷新什么都不发生、也没有任何提示和日志 ——
+         用户会以为「刷新了但没反应」。加载失败必须说出来。 */
+      const msg = '静态数据中心模块未加载（data-hub.js），无法刷新';
+      toast(msg, 'warn');
+      NetLog.push('dict', '静态数据中心', false, 0, msg, { src: '设置·静态数据' });
+      return;
+    }
     if (DataHub._busy) { toast('已有更新在进行中，请等它跑完', 'warn'); return; }
     const old = btn.textContent;
     btn.disabled = true;
     try {
       const r = await DataHub.updateAll(p => {
         const lb = p.total ? `（${p.done}/${p.total}）` : '';
-        btn.textContent = '⏳ ' + (busyText || '更新中') + lb.slice(0, 10);
+        btn.textContent = '⏳ ' + (busyText || '刷新中') + lb.slice(0, 10);
       }, { only: keys });
       const parts = keys.map(k => {
         const x = r[k];
         if (!x) return '';
-        if (!x.ok) return k + '失败：' + x.err;
+        const label = ((DataHub.DS.find(d => d.key === k) || {}).label) || k;
+        if (!x.ok) return label + '失败：' + x.err;
         const rr = x.r || {};
-        return k + ' 完成' + (rr.n != null ? '（' + rr.n + '）' : '') + (rr.ver ? ' 到 ' + rr.ver : '');
+        return label + ' 刷新完成' + (rr.n != null ? '（' + rr.n + '）' : '') + (rr.ver ? ' 到 ' + rr.ver : '');
       }).filter(Boolean);
       toast(parts.join('；') || '完成');
     } catch (e) { toast('更新失败：' + (e && e.message || e)); }
@@ -764,12 +780,12 @@ export function bindEvents() {
     renderDataHubUI();
   }
   $('dhSyncBtn').addEventListener('click', e => {
-    dhRun(DataHub.DS.map(x => x.key), e.currentTarget, '更新中');
+    dhRun(DataHub.DS.map(x => x.key), e.currentTarget, '刷新中');
   });
   $('dhTable').addEventListener('click', e => {
     const b = e.target.closest('button[data-dh-ds]');
     if (!b) return;
-    dhRun([b.dataset.dhDs], b, '更新中');
+    dhRun([b.dataset.dhDs], b, '刷新中');
   });
   setTimeout(renderDataHubUI, 80);
 

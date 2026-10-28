@@ -480,7 +480,7 @@ function renderBatchView() {
     <div class="card-head">
       <h3>${esc(headTitle)}</h3>
       <div class="head-right">
-        <button id="batchSaveBtn" class="btn ghost sm">💾 存为报告</button>
+        <button id="batchSaveBtn" class="btn ghost sm">存为报告</button>
         <button id="batchCloseBtn" class="btn ghost sm">关闭</button>
       </div>
     </div>
@@ -875,7 +875,7 @@ function renderHeatView() {
       <div class="hh-wrap"><table class="hh-tbl"><thead><tr><th>名称</th><th class="num">涨幅</th><th class="num">成交额</th><th>所属板块</th></tr></thead><tbody>
       ${lim.list.slice(0, 60).map(q => `<tr><td>${esc(q.name)}<span class="hh-cnt">${q.code}</span></td><td class="num hh-up">${heatPctTxt(q.pct)}</td><td class="num">${q.amount ? q.amount.toFixed(1) + ' 亿' : '—'}</td><td class="hh-tags">${(state.boardRev[q.code] || []).slice(0, 3).map(b => esc(b)).join(' · ') || '—'}</td></tr>`).join('')}
       </tbody></table></div></details>` : ''}
-    <div class="hh-foot">数据来源：腾讯行情 qt.gtimg.cn 全市场直连快照（沪深主板 + 创业板 + 科创板 + 北交所，代码清单来自随应用发布的股票字典；约 60 秒缓存复用，每次取数都会记入「设置 → 日志」）。涨停按「昨收×涨幅上限」还原涨停价精确判定。<br>口径提示：上方「上涨/下跌」主数字为<b>沪深两市</b>（与同花顺等行情软件大盘页可直接对照）；北交所单独一行小字。其余统计（涨跌分布 / 涨停复盘 / 成交额）为全市场口径；疑似停牌（零成交且现价=昨收）会计入平盘，同花顺口径里这类被剔除，这是平盘家数对不上的主要原因。点标题行「⬇ 下载源数据」导出<b>本次分析的完整源数据</b>（取数凭证 + 评分构成 + 三套口径家数 + 逐股明细 + 板块汇总 + 涨停复盘），拿它和同花顺逐股对账。</div>
+    <details class="hh-foot"><summary>数据口径与来源（点开看）</summary>数据来源：腾讯行情 qt.gtimg.cn 全市场直连快照（沪深主板 + 创业板 + 科创板 + 北交所，代码清单来自随应用发布的股票字典；约 60 秒缓存复用，每次取数都会记入「设置 → 日志」）。涨停按「昨收×涨幅上限」还原涨停价精确判定。<br>口径提示：上方「上涨/下跌」主数字为<b>沪深两市</b>（与同花顺等行情软件大盘页可直接对照）；北交所单独一行小字。其余统计（涨跌分布 / 涨停复盘 / 成交额）为全市场口径；疑似停牌（零成交且现价=昨收）会计入平盘，同花顺口径里这类被剔除，这是平盘家数对不上的主要原因。点标题行「⬇ 下载源数据」导出<b>本次分析的完整源数据</b>（取数凭证 + 评分构成 + 三套口径家数 + 逐股明细 + 板块汇总 + 涨停复盘），拿它和同花顺逐股对账。</details>
   `;
   box.querySelectorAll('.hh-sort[data-hsort]').forEach(btn => {
     btn.onclick = () => { state.heatSort = btn.dataset.hsort; renderHeatView(); };
@@ -1404,7 +1404,7 @@ async function runRiskAnalysis() {
       </div>
       <div class="tech-ai">
         <button id="riskAiBtn" class="btn primary">🤖 AI 综合解读</button>
-        <button id="riskSaveBtn" class="btn ghost">💾 保存报告</button>
+        <button id="riskSaveBtn" class="btn ghost">保存报告</button>
         <div id="riskAiOut" class="tech-ai-out" hidden></div>
       </div>`;
     document.getElementById('riskAiBtn').onclick = runRiskAi;
@@ -1604,7 +1604,7 @@ async function runTradeReview() {
       </div>
       <div class="tech-ai">
         <button id="reviewAiBtn" class="btn primary">🤖 AI 深度复盘（错误 / 错失 / 偏差 / 3 条规则）</button>
-        <button id="reviewSaveBtn" class="btn ghost">💾 保存报告</button>
+        <button id="reviewSaveBtn" class="btn ghost">保存报告</button>
         <div id="reviewAiOut" class="tech-ai-out" hidden></div>
       </div>`;
     document.getElementById('reviewAiBtn').onclick = runReviewAi;
@@ -2069,7 +2069,7 @@ async function runBacktest() {
       <div class="tech-reason" style="margin-top:14px"><h4>🔧 改进建议（规则引擎）</h4><ul>${t.sugg.map(s => `<li class="${s[0] === 'bad' ? 'li-bad' : s[0] === 'warn' ? 'li-warn' : 'li-info'}">${s[0] === 'bad' ? '🔴' : s[0] === 'warn' ? '🟡' : '🟢'} ${esc(s[1])}</li>`).join('')}</ul></div>
       <div class="tech-ai">
         <button id="btAiBtn" class="btn primary">🤖 AI 优化建议</button>
-        <button id="btSaveBtn" class="btn ghost">💾 保存报告</button>
+        <button id="btSaveBtn" class="btn ghost">保存报告</button>
         <div id="btAiOut" class="tech-ai-out" hidden></div>
       </div>`;
     drawBtCombinedChart(document.getElementById('btCombCv'), t.btBars, t.sim.equity, [...t.sim.trades, ...(t.sim.open ? [t.sim.open] : [])]);
@@ -2384,18 +2384,18 @@ const KIND_LABEL = { stock: ['个股诊断', 'k-diag'], batch: ['批量诊断', 
   (function initMomKlib() {
     const el = document.getElementById('momKlibStatus');
     if (el && typeof KLib !== 'undefined') {
-      KLib.statusLine().then(s => { el.textContent = '💾 ' + s.txt; }).catch(() => { el.textContent = '💾 K 线库状态未知（IndexedDB 不可用？）'; });
+      KLib.statusLine().then(s => { el.textContent = '' + s.txt; }).catch(() => { el.textContent = 'K 线库状态未知（IndexedDB 不可用？）'; });
     }
     on('momSyncBtn', async () => {
       if (typeof KLib === 'undefined') return toast('K 线库模块未加载');
       const btn = document.getElementById('momSyncBtn'), st2 = document.getElementById('momKlibStatus');
-      btn.disabled = true; btn.textContent = '⏳ 同步中…';
+      btn.disabled = true; btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg>同步中…';
       try {
-        const r = await KLib.ensure(p => { if (st2) st2.textContent = '💾 ' + p.stage; });
-        if (st2) st2.textContent = '💾 本机 ' + r.n + ' 只 · 最新 ' + r.targetDate + (r.failed ? ' · 失败 ' + r.failed + ' 只' : '');
+        const r = await KLib.ensure(p => { if (st2) st2.textContent = '' + p.stage; });
+        if (st2) st2.textContent = '本机 ' + r.n + ' 只 · 最新 ' + r.targetDate + (r.failed ? ' · 失败 ' + r.failed + ' 只' : '');
         toast('K 线库已同步：' + r.n + ' 只');
       } catch (e) {
-        if (st2) st2.textContent = '💾 同步失败：' + (e && e.message || e);
+        if (st2) st2.textContent = '同步失败：' + (e && e.message || e);
         toast('K 线库同步失败：' + (e && e.message || e));
       }
       btn.disabled = false; btn.textContent = '🔄 同步K线库';

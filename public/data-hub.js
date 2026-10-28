@@ -75,6 +75,61 @@ const DataHub = {
     try { localStorage.setItem(this.DS_LS, JSON.stringify(m)); } catch (e) { /* */ }
   },
 
+  /* ---------- 状态快照（设置 → 数据管理 表格用） ----------
+     区分两件事，别混：
+       date = 数据本身到哪一天（数据日期）
+       last = 上一次执行更新的日期（在 lastGet 里）
+     用户关心的是前者 —— 「我的股票名录是哪天的」，不是「我哪天点的刷新」。 */
+  async stat() {
+    const verDate = (v) => {
+      const m = /(\d{4}-\d{2}-\d{2})/.exec(String(v || ''));
+      return m ? m[1] : '';
+    };
+    const out = {};
+
+    /* ① 股票名录：内存 StockDict.d 才是生效数据，版本号在种子键里 */
+    let sn = 0;
+    try { sn = Object.keys((typeof StockDict !== 'undefined' && StockDict.d) || {}).length; } catch (e) { /* */ }
+    let sv = '';
+    try { sv = (JSON.parse(localStorage.getItem('sj_stock_dict_seed') || 'null') || {}).v || ''; } catch (e) { /* */ }
+    out.stocks = {
+      n: sn,
+      date: verDate(sv),
+      src: !sv ? '随应用打包' : (/^online-/.test(sv) ? '在线拉取' : '随应用打包'),
+      unit: '只',
+    };
+
+    /* ② 板块成分：内存 state.boardDict / 存储键 sj_board_dict_v1 */
+    let bn = 0;
+    try { bn = (state.boardDict || []).length; } catch (e) { /* */ }
+    let bv = '';
+    try { bv = (JSON.parse(localStorage.getItem('sj_board_dict_v1') || 'null') || {}).v || ''; } catch (e) { /* */ }
+    out.boards = {
+      n: bn,
+      date: verDate(bv),
+      src: !bv ? '随应用打包' : (/^online-/.test(bv) ? '在线拉取' : '随应用打包'),
+      unit: '个',
+    };
+
+    /* ③ 日K：KLib meta 里 n / targetDate 就是权威口径 */
+    let meta = {};
+    try { meta = (typeof KLib !== 'undefined') ? await KLib.metaGet() : {}; } catch (e) { /* */ }
+    out.kline = {
+      n: meta.n || 0,
+      date: meta.targetDate || '',
+      src: meta.n ? '本机K线库' : '未建立',
+      unit: '只',
+    };
+
+    /* ④ 周K：由日K聚合，没有独立存储；有缓存才知道有多少只 */
+    const wk = (this._weekMap && this._weekVer)
+      ? { n: this._weekMap.size, date: this._weekVer, src: '由日K聚合' }
+      : { n: 0, date: meta.targetDate || '', src: '按需聚合（点刷新后生成）' };
+    out.week = Object.assign({ unit: '只' }, wk);
+
+    return out;
+  },
+
   /* ---------- 定时调度 ---------- */
   /* 某数据集今天是否该自动跑：总开关开 && 已过设定时刻 && 今天没跑过 && 工作日 */
   isDue(key, now) {
@@ -146,6 +201,7 @@ const DataHub = {
   /* ---------- 取数：东财 push2 clist ---------- */
   async _clist(fs, fields, onRows, label) {
     /* 分页拉全：pz=500，total 由首页返回；单页失败重试 1 次，仍失败抛错（绝不静默） */
+    const t0 = Date.now();
     const pz = 500;
     let pn = 1, total = Infinity, got = 0;
     for (;;) {
@@ -160,7 +216,12 @@ const DataHub = {
           if (!j || !j.data) throw new Error('返回无 data');
           d = j.data;
         } catch (e) {
-          if (tryN === 1) throw new Error(label + ' 第 ' + pn + ' 页失败：' + (e.message || e));
+          if (tryN === 1) {
+            /* 失败也要留痕：原来这里直接抛，只有调用方的汇总日志，看不出卡在第几页 */
+            NetLog.push('dict', '东财 clist·' + label, false, Date.now() - t0,
+              `第 ${pn} 页失败：` + (e.message || e), { url, err: e.message || String(e) });
+            throw new Error(label + ' 第 ' + pn + ' 页失败：' + (e.message || e));
+          }
           await new Promise(res => setTimeout(res, 500));
         }
       }
@@ -173,6 +234,10 @@ const DataHub = {
       pn++;
       await new Promise(res => setTimeout(res, this.GAP));
     }
+    /* 分页汇总：几页、多少行、耗时——「到底有没有联网」看这一条就够 */
+    NetLog.push('dict', '东财 clist·' + label, got > 0, Date.now() - t0,
+      `${pn} 页 / ${got} 行（接口声明 total=${total === Infinity ? '?' : total}）`,
+      { url: 'https://push2.eastmoney.com/api/qt/clist/get?fs=' + fs, resp: `${got} 行` });
     return got;
   },
   async _pool(items, worker, onProgress) {
@@ -357,17 +422,21 @@ const DataHub = {
       const out = {};
       for (const key of keys) {
         const prog = (done, total, stage) => { try { onProgress && onProgress({ key, done, total, stage }); } catch (e) { /* */ } };
+        /* 触发来源：日志里能看出「这条请求是点静态数据刷新带出来的」，
+           而不是只看到一条孤零零的 dict 记录不知道谁触发的 */
+        const label = (this.DS.find(x => x.key === key) || {}).label || key;
+        const ctx = '设置·静态数据·' + label;
         try {
           /* 周K依赖日K：日K本轮在跑/刚跑完则直接聚合，否则先 ensure 日K在库 */
           if (key === 'week' && !keys.includes('kline') && !(typeof KLib !== 'undefined' && KLib._map && KLib._map.size)) {
-            await this.updKline();
+            await NetLog.withCtx(ctx + '·预热日K', () => this.updKline());
           }
-          out[key] = { ok: true, r: await this['upd' + key[0].toUpperCase() + key.slice(1)](prog) };
+          out[key] = { ok: true, r: await NetLog.withCtx(ctx, () => this['upd' + key[0].toUpperCase() + key.slice(1)](prog)) };
           this.lastSet(key, true);
         } catch (e) {
           out[key] = { ok: false, err: e.message || String(e) };
           this.lastSet(key, false);
-          NetLog.push('dict', '静态数据中心·' + key, false, 0, e.message || String(e));
+          NetLog.push('dict', '静态数据中心·' + label, false, 0, e.message || String(e), { src: ctx });
         }
       }
       return out;

@@ -156,9 +156,11 @@ async function enterApp(user) {
     $('userRole').hidden = S.user.role !== 'admin';
     $('logoutBtn').hidden = false;
   } else {
-    $('modeBadge').textContent = '本地';
+    /* v3.10.0 顶栏去重：原来「本地」徽标与用户名位的「本地模式」同时出现，
+       读起来是同一个信息说了两遍。现在徽标说清模式，用户名位留空（本地没有账号）。 */
+    $('modeBadge').textContent = '本地模式';
     $('modeBadge').classList.add('local');
-    $('userName').textContent = '本地模式';
+    $('userName').textContent = '';
     $('userRole').hidden = true;
     $('logoutBtn').hidden = true;
   }

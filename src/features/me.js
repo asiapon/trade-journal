@@ -67,7 +67,12 @@ export function renderMe() {
   renderHealthPanel('dlHealth');
   renderJsSkills();
   const cloud = S.mode === 'cloud' && !!S.user;
-  const admin = !!(cloud && S.user.role === 'admin');
+  /* v3.9.20 本地模式 = 单用户自托管，使用者就是 owner。
+     旧实现把 admin 绑死成 `cloud && role==='admin'`，本地模式因此把
+     模型 / 数据管理 / 技能 / 操作日志 四个页签全部隐藏 ——
+     连「数据管理 → 静态数据中心」都进不去。这里对本地模式直接放行。 */
+  const localOwner = S.mode === 'local';
+  const admin = localOwner || !!(cloud && S.user.role === 'admin');
   const isAdminPane = n => n !== 'cost' && n !== 'user';
   document.querySelectorAll('#setTabs .set-tab').forEach(t => { t.hidden = isAdminPane(t.dataset.set) && !admin; });
   if (!admin) document.querySelectorAll('#view-me .set-pane').forEach(p => { if (isAdminPane(p.dataset.pane)) p.hidden = true; });
@@ -81,8 +86,11 @@ export function renderMe() {
   if (acct) acct.hidden = !cloud;
   const ah = $('myAcctHint');
   if (ah) ah.textContent = cloud ? `当前账号 ${S.user.username}${admin ? '（管理员）' : ''}` : '—';
-  $('userMgmtCard').hidden = !admin;
-  if (admin) loadUsers();
+  $('userMgmtCard').hidden = !(cloud && S.user && S.user.role === 'admin');
+  /* v3.9.20 本地模式：用户管理页签下给一句说明，而不是整片空白 */
+  const lc = $('userLocalCard');
+  if (lc) lc.hidden = !localOwner;
+  if (admin && cloud) loadUsers();
 }
 /* ---------- v3.12.4 日志页：自托管只读服务器日志文件；
    v3.18.1 云端托管版没有服务端进程（纯静态托管+云数据库，无磁盘可写），
@@ -94,6 +102,10 @@ export function netLogLine(e) {
     + (e.src ? ' ｜ ' + e.src : '')
     + (e.ok ? (' ｜ ' + (e.resp || e.detail || '')) : (' ｜ ' + (e.err || e.detail || '')));
 }
+/* 日志页自动刷新定时器（模块级；重复进入页面时重建，避免堆积） */
+let _netLogTimer = null;
+let _lastLogTxt = '';
+
 export function renderNetLogUI() {
   const el = $('netLogSummary');
   if (!el) return;
@@ -101,21 +113,38 @@ export function renderNetLogUI() {
   /* v0.4.0 能力化：探测到 serverLogs（自托管/CF D1）走服务端日志，否则前端日志 */
   const caps = window.__CAPS;
   const isSelf = caps ? caps.serverLogs : (!(location.hostname.endsWith('workbuddy.host')) && location.protocol !== 'file:');
-  if (!isSelf) {
-    const buf = (typeof NetLog !== 'undefined' && NetLog.buf) || [];
-    el.textContent = '云端托管版没有服务端日志文件（纯静态托管，无可写磁盘）；以下是本机浏览器记录的前端调用日志（最近 ' + buf.length + ' 条，存本机）。';
-    if (list) {
-      list.innerHTML = buf.length
-        ? '<pre class="srv-log">' + esc(buf.map(netLogLine).join('\n')) + '</pre>'
-        : '<p class="hint">本机还没有调用记录（打开行情/问答等会自动记录）。</p>';
+
+  const draw = () => {
+    if (!isSelf) {
+      const buf = (typeof NetLog !== 'undefined' && NetLog.buf) || [];
+      el.textContent = '云端托管版没有服务端日志文件（纯静态托管，无可写磁盘）；以下是本机浏览器记录的前端调用日志（最近 ' + buf.length + ' 条，存本机）。';
+      if (list) {
+        list.innerHTML = buf.length
+          ? '<pre class="srv-log">' + esc(buf.map(netLogLine).join('\n')) + '</pre>'
+          : '<p class="hint">本机还没有调用记录（打开行情/问答等会自动记录）。</p>';
+      }
+      return;
     }
-    return;
-  }
-  el.textContent = '日志文件：deploy/logs/app-' + new Date().toISOString().slice(0, 10) + '.log（每 2.5 秒批量上报一次调用明细）';
-  if (list) list.textContent = '加载中…';
-  fetch('/api/logs/tail?n=200', { headers: sjTokenHeaders() }).then(r => r.json()).then(j => {
-    if (list) list.innerHTML = '<pre class="srv-log">' + esc((j.lines || []).join('\n') || '(空)') + '</pre>';
-  }).catch(e => { if (list) list.textContent = '读取失败：' + (e.message || e); });
+    el.textContent = '日志文件：deploy/selfhost/logs/app-' + new Date().toISOString().slice(0, 10) + '.log'
+      + '（调用后 2.5 秒批量上报一次；本页每 5 秒自动刷新）';
+    fetch('/api/logs/tail?n=200', { headers: sjTokenHeaders() }).then(r => r.json()).then(j => {
+      const txt = (j.lines || []).join('\n') || '(空)';
+      if (!list || txt === _lastLogTxt) return;      // 内容没变不重建，免得滚动位置被顶回顶部
+      _lastLogTxt = txt;
+      list.innerHTML = '<pre class="srv-log">' + esc(txt) + '</pre>';
+    }).catch(e => { if (list && !list.querySelector('pre')) list.textContent = '读取失败：' + (e.message || e); });
+  };
+
+  draw();
+
+  /* 自动刷新的原因：日志是「调用后 2.5 秒才批量上报」的。原来只在打开页面时读一次，
+     点完一键分析立刻进来，看不到刚发生的调用，于是误以为「根本没记日志」。 */
+  if (_netLogTimer) { clearInterval(_netLogTimer); _netLogTimer = null; }
+  _netLogTimer = setInterval(() => {
+    if (!document.body.contains(el)) { clearInterval(_netLogTimer); _netLogTimer = null; return; }
+    if (el.offsetParent === null) return;          // 页签不可见，不刷
+    draw();
+  }, 5000);
 }
 /* ---------- 费率编辑 ---------- */
 export function renderLogs() {

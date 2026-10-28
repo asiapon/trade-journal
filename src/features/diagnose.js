@@ -854,8 +854,10 @@ export function renderDiagHistory() {
   const el = $('diagHistory');
   if (!el) return;
   const list = loadDiagHistory();
-  if (!list.length) { el.innerHTML = ''; return; }
-  el.innerHTML = '<div class="card-title-row" style="margin-top:4px"><span class="card-title" style="font-size:13px">诊断报告历史（本机保存）</span>'
+  /* v3.10.0 无历史时整块隐藏：原来只清空 innerHTML，留下一个带边框内距的空卡片 */
+  if (!list.length) { el.innerHTML = ''; el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = '<div class="card-title-row"><span class="card-title">诊断报告历史（本机保存）</span>'
     + '<button class="btn ghost sm" id="diagHistClear" type="button">清空</button></div>'
     + list.map((r, i) => `<div class="mini-item diag-hist-item" data-i="${i}"><div><b>${esc(r.title)}</b><span class="hint">${esc(r.time)}</span></div><span class="pct ${r.sig === '买入' ? 'pos' : r.sig === '卖出' ? 'neg' : 'neu'}">${esc(r.sig)} ${r.pct > 0 ? '+' : ''}${r.pct}</span></div>`).join('');
   $('diagHistClear').onclick = () => { localStorage.removeItem(DIAG_HIST_KEY); renderDiagHistory(); toast('报告历史已清空'); };
