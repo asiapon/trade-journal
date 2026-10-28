@@ -45,11 +45,11 @@ npm run preview   # 预览构建产物
 node scripts/cli.mjs check            # 体检：构建 + 产物校验 + 测试
 node scripts/cli.mjs cf deploy        # 发布到 Cloudflare Workers + D1（纯命令行上线）
 node scripts/cli.mjs self install     # 在服务器上安装/升级自托管服务
-node scripts/cli.mjs self status      # 服务状态
+node scripts/cli.mjs self start       # 启动（已在运行则重启）
 node scripts/cli.mjs help             # 完整命令列表
 ```
 
-也有一批 npm 快捷方式：`npm run check`、`npm run deploy:cf`、`npm run self:backup`、
+也有一批 npm 快捷方式：`npm run check`、`npm run deploy:cf`、`npm run self:start`、
 `npm run cf:status` 等，完整列表见 `package.json` 的 `scripts`。
 
 凭据写在仓库根 `.env.local`，脚本启动时自动加载。该文件已被 git 忽略。
@@ -62,8 +62,9 @@ node scripts/cli.mjs help             # 完整命令列表
 > WorkBuddy 托管的发布动作只能在客户端界面里点，无法脚本化，
 > 相关命令已于 v3.20 移除（前端的云服务适配代码仍保留，见 `deploy/DEPLOY.md`）。
 
-自托管提供完整运维脚本（Linux + Windows 双平台）：
-安装 / 启动 / 停止 / 重启 / 状态 / 日志 / 备份 / 恢复 / 卸载 / 重置库 / 重置 PG 密码。
+自托管只保留四个动作，Linux + Windows 双平台对称：
+**安装 / 启动（在运行则重启）/ 停止 / 卸载**。
+看状态、看日志、备份这类偶尔用的动作给的是手动命令，见 [scripts/OPS.md](scripts/OPS.md)。
 
 **同一份 `dist/` 可上任意环境**：前端启动时自动探测当前后端类型
 （有 RPC 端点走 18 函数 RPC，否则走平台云服务 PostgREST），无需分别打包。

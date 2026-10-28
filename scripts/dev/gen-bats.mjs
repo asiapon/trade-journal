@@ -11,21 +11,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const DIR = path.dirname(fileURLToPath(import.meta.url));
+/* 输出目录：本文件在 scripts/dev/，垫片要落到 scripts/self/windows/。
+   不能直接用自身目录（v3.19 迁移后曾因此生成到 dev/ 下）。 */
+const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'self', 'windows');
 
 /** 每个 ps1 → 一个 bat 垫片（描述必须是纯 ASCII，会被写进 rem 注释） */
 const SCRIPTS = [
   ['install', 'Install or upgrade self-hosted service'],
-  ['start', 'Start service'],
+  ['start', 'Start service (restarts if already running)'],
   ['stop', 'Stop service'],
-  ['restart', 'Restart service'],
-  ['status', 'Show service status'],
-  ['logs', 'Show logs'],
-  ['backup', 'Backup database and config'],
-  ['restore', 'Restore from backup'],
   ['uninstall', 'Uninstall service'],
-  ['reset-db', 'Reset application database'],
-  ['reset-pg', 'Reset postgres superuser password'],
 ];
 
 function shim(name, desc) {

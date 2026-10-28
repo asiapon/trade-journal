@@ -26,8 +26,8 @@ scripts/
 │   └── remove.mjs        删除（危险）
 ├── self/               自托管通道
 │   ├── deploy.mjs        把 dist 同步到服务器（rsync/scp）
-│   ├── linux/            服务器端脚本 × 11
-│   └── windows/          服务器端脚本 × 11（ps1 + bat 垫片）
+│   ├── linux/            服务器端脚本 × 4（install/start/stop/uninstall）
+│   └── windows/          同上 + bat 垫片（双击用）
 └── dev/                开发期与交付期工具
     ├── verify-deploy.mjs 发布后自检（页面/Key/域名/RPC 信封，五项）
     ├── fix-ps1.mjs       给 ps1 补 UTF-8 BOM + 统一 CRLF
@@ -44,7 +44,7 @@ scripts/
 ```bash
 node scripts/cli.mjs                    # 交互菜单
 node scripts/cli.mjs cf deploy          # 发布到 Cloudflare
-node scripts/cli.mjs self status        # 自托管服务状态
+node scripts/cli.mjs self start         # 启动自托管（在跑则重启）
 node scripts/cli.mjs help               # 完整命令列表
 ```
 
@@ -52,7 +52,7 @@ node scripts/cli.mjs help               # 完整命令列表
 
 ```bash
 npm run deploy:cf
-npm run self:status
+npm run self:start
 npm run check
 ```
 
@@ -65,21 +65,23 @@ npm run check
 ## 自托管服务器端脚本
 
 跑在**服务器上**，不在本机（本机用 `self deploy` 推代码过去）。
+只有四个动作，「启动」自带重启语义：
 
 | 操作 | Linux（`sudo`） | Windows（管理员） |
 |---|---|---|
-| 安装/升级 | `scripts/self/linux/install.sh` | `scripts\self\windows\install.bat` |
-| 启动 / 停止 / 重启 | `start.sh` / `stop.sh` / `restart.sh` | `start.bat` / `stop.bat` / `restart.bat` |
-| 状态 / 日志 | `status.sh` / `logs.sh` | `status.bat` / `logs.bat` |
-| 备份 / 恢复 | `backup.sh` / `restore.sh` | `backup.bat` / `restore.bat` |
+| 安装 / 升级 | `scripts/self/linux/install.sh` | `scripts\self\windows\install.bat` |
+| 启动（在运行则重启） | `start.sh` | `start.bat` |
+| 停止 | `stop.sh` | `stop.bat` |
 | 卸载 | `uninstall.sh` | `uninstall.bat` |
-| 重置库 / 重置PG密码 | `reset-db.sh` / `reset-pg.sh` | `reset-db.bat` / `reset-pg.bat` |
+
+看状态、看日志、备份这些偶尔用一次的动作不单独写脚本，手动命令见
+[OPS.md 的 2.2 节](OPS.md)。
 
 也可以从仓库根一次调完（自动选当前平台）：
 
 ```bash
-node scripts/cli.mjs self status
-node scripts/cli.mjs self backup
+node scripts/cli.mjs self install
+node scripts/cli.mjs self start
 ```
 
 ---
@@ -89,9 +91,30 @@ node scripts/cli.mjs self backup
 | 工具 | 什么时候用 |
 |---|---|
 | `verify-deploy.mjs` | **每次发布完必跑**。校验页面可访问、产物里的 key/域名与线上一致、RPC 返回 `{ok,...}` 信封。全绿才可以说"发布成功" |
+| `gen-dict.mjs` | **要更新仓库里的 `public/stock-dict.json` / `board-dict.json` 时跑**。页面上的「刷新」只写浏览器本地库，改不了磁盘文件 —— 见下 |
 | `fix-ps1.mjs` | 改过任何 `.ps1` 后跑一次。PS 5.1 无 BOM 时按系统 ANSI 读，中文注释会变乱码导致语法报错 |
 | `gen-bats.mjs` | 只有**增删** `self/windows/*.ps1` 时才跑；只改内容不用（bat 只是转发） |
 | `split_app.py` | 不要跑。它依赖 v0.11 时 `src/app.js` 的结构，现在跑会破坏代码，仅留档回溯 |
+
+### 静态数据：两条更新路径，别混
+
+| 做法 | 改的是什么 | 生效范围 |
+|---|---|---|
+| 设置 → 数据管理 → 静态数据 → **刷新** | 浏览器 localStorage / IndexedDB | **只有当前这台机器/这个浏览器**，立即生效 |
+| `node scripts/dev/gen-dict.mjs` | 仓库里的 `public/*.json` 文件 | 重新构建后，**所有访问者**都拿到新数据 |
+
+浏览器跑在沙箱里，网页改不了磁盘文件 —— 所以「点刷新」永远不可能重写 json。
+两份文件走的是不同接口，可以分开刷：
+
+```bash
+node scripts/dev/gen-dict.mjs stocks     # 只刷股票名录（东财 clist 全A，约 12 页）
+node scripts/dev/gen-dict.mjs boards     # 只刷板块成分（板块列表 + 逐板块成分，~1000 请求）
+node scripts/dev/gen-dict.mjs            # 两个都刷
+node scripts/cli.mjs dev check           # 刷完重新构建，把新文件带进 dist/
+```
+
+脚本有两道保护：取回条数低于阈值（股票 1000 / 板块 100）直接放弃写入，
+不让一次接口抖动把好数据覆盖成空。跑不通可用 `DICT_BASE=<镜像地址>` 换源。
 
 ---
 

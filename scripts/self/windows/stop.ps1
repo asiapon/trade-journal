@@ -31,7 +31,7 @@ Start-Sleep -Milliseconds 500
 if ((Get-ListenerPids $Port).Count -eq 0) {
   Write-Footer @(
     "端口 $Port 已释放",
-    "重新启动： .\start.bat"
+    "重新启动 / 重启： .\start.bat"
   )
 } else {
   Write-Bad "端口 $Port 仍被占用（可能需要管理员权限）"

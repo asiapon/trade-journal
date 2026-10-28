@@ -52,7 +52,7 @@ if command -v ss >/dev/null 2>&1; then
 fi
 
 if [ "$STOPPED" = 1 ]; then
-  footer "启动： sudo ./start.sh" "状态： ./status.sh"
+  footer "启动 / 重启： sudo ./start.sh" "卸载： sudo ./uninstall.sh"
 else
   info "没有需要停止的进程（端口 ${PORT} 空闲）"
 fi

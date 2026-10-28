@@ -34,19 +34,16 @@ const CF_OPS = {
   remove: { desc: '删除 Worker + D1（数据丢失，需确认）', file: 'cf/remove.mjs' },
 };
 
+/* 自托管只保留四个动作 —— 装、卸、启、停。
+   「启」自带重启语义（在跑就先停再起），所以不需要单独的 restart；
+   状态 / 日志 / 备份 / 重置这类按需操作不值得各养一套双平台脚本，
+   需要时手动命令即可（见 scripts/OPS.md 的手动操作一节）。 */
 const SELF_OPS = {
   deploy: { desc: '构建 + 同步 dist 到服务器（scp/rsync）', file: 'self/deploy.mjs' },
-  install: { desc: '安装 / 升级服务（幂等）' },
-  start: { desc: '启动服务' },
-  stop: { desc: '停止服务' },
-  restart: { desc: '重启服务' },
-  status: { desc: '运行状态 / 端口 / 健康 / 数据库' },
-  logs: { desc: '查看日志（-n 行数、-f 跟随）' },
-  backup: { desc: '备份数据库与配置' },
-  restore: { desc: '从备份恢复' },
+  install: { desc: '安装 / 升级（幂等，已在跑会重启）' },
+  start: { desc: '启动；已在运行则重启' },
+  stop: { desc: '停止' },
   uninstall: { desc: '卸载（逐项确认）' },
-  'reset-db': { desc: '快速重置应用库（秒级，不卸载）' },
-  'reset-pg': { desc: '救援：重置 postgres 超管密码' },
 };
 
 /* ============================================================
@@ -106,7 +103,7 @@ function printHelp() {
 
   block('cf', 'Cloudflare Workers + D1 —— 纯命令行发布', CF_OPS,
     '需要 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID（写在 .env.local）');
-  block('self', '自托管服务器 —— 完整运维（安装到卸载）', SELF_OPS,
+  block('self', '自托管服务器 —— 安装 / 启动 / 停止 / 卸载', SELF_OPS,
     IS_WIN ? '当前平台 Windows：脚本在 scripts/self/windows/' : '当前平台 Linux/macOS：脚本在 scripts/self/linux/');
 
   console.log(`  ${C.b('开发')}  ${C.d('(dev)')}`);
@@ -119,9 +116,9 @@ function printHelp() {
   footer([
     C.d('示例：'),
     '  node scripts/cli.mjs cf status',
-    '  node scripts/cli.mjs self backup',
+    '  node scripts/cli.mjs self start',
     '',
-    C.d('npm 快捷方式：') + ' npm run cf:status  /  npm run self:backup',
+    C.d('npm 快捷方式：') + ' npm run cf:status  /  npm run self:start',
     C.d('完整文档：') + '   scripts/OPS.md',
   ]);
 }
@@ -138,11 +135,10 @@ async function menu() {
     1) Cloudflare  发布（纯命令行上线）
     2) Cloudflare  状态
     3) 自托管      安装 / 升级
-    4) 自托管      启动 / 停止 / 重启
-    5) 自托管      状态 / 日志
-    6) 自托管      备份 / 恢复
-    7) 自托管      卸载
-    8) 体检 + 本地预览
+    4) 自托管      启动（在运行则重启）
+    5) 自托管      停止
+    6) 自托管      卸载
+    7) 体检 + 本地预览
     h) 完整帮助
     0) 退出
 `);
@@ -153,26 +149,14 @@ async function menu() {
     1: ['cf', 'deploy'],
     2: ['cf', 'status'],
     3: ['self', 'install'],
-    5: ['self', 'status'],
-    6: ['self', 'backup'],
-    7: ['self', 'uninstall'],
-    8: ['dev', 'preview'],
+    4: ['self', 'start'],
+    5: ['self', 'stop'],
+    6: ['self', 'uninstall'],
+    7: ['dev', 'preview'],
   };
 
   if (sel === '0') return;
   if (sel.toLowerCase() === 'h') { printHelp(); return; }
-  if (sel === '4') {
-    const rl2 = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const a = (await rl2.question('  启动(1) / 停止(2) / 重启(3)：')).trim();
-    rl2.close();
-    return dispatch('self', a === '1' ? 'start' : a === '2' ? 'stop' : a === '3' ? 'restart' : '');
-  }
-  if (sel === '6') {
-    const rl3 = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const a = (await rl3.question('  备份(1) / 恢复(2)：')).trim();
-    rl3.close();
-    return dispatch('self', a === '1' ? 'backup' : a === '2' ? 'restore' : '');
-  }
   const hit = map[sel];
   if (!hit) { die('编号无效'); }
   return dispatch(hit[0], hit[1]);

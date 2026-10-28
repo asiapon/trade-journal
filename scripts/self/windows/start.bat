@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableDelayedExpansion
 rem ============================================================
-rem  Start service
+rem  Start service (restarts if already running)
 rem  ASCII-only shim: real logic lives in start.ps1
 rem  Append --no-pause to skip the final keypress (for scripts/CI).
 rem ============================================================

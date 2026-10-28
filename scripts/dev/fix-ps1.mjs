@@ -8,13 +8,15 @@
 
    同时保证换行为 CRLF。
 
-   用法：node scripts/_fix-ps1.mjs
+   用法：node scripts/dev/fix-ps1.mjs
    ============================================================ */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
+/* 扫描起点：scripts/ 根（本文件在 scripts/dev/，要上溯一级）。
+   不能只扫自身目录，否则 self/windows/*.ps1 永远扫不到。 */
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BOM = '\uFEFF';
 
 function walk(dir, out = []) {

@@ -139,7 +139,7 @@ fi
 step "配置 .env"
 if [ "$UPGRADE" = 1 ]; then
   ok ".env 已存在，保持不变"
-  info "端口：${PORT}（改端口请编辑 $ENV_FILE 后 ./restart.sh）"
+  info "端口：${PORT}（改端口请编辑 $ENV_FILE 后 ./start.sh 重启生效）"
 else
   cat > "$ENV_FILE" <<EOF
 PORT=${PORT}
@@ -203,13 +203,13 @@ if [ "$OKFLAG" = 1 ]; then
     "本机：  http://localhost:${PORT}" \
     "局域网：http://${IP:-<本机IP>}:${PORT}" \
     "" \
-    "启动 sudo ./start.sh   停止 sudo ./stop.sh   重启 sudo ./restart.sh" \
-    "状态 ./status.sh       日志 ./logs.sh        备份 sudo ./backup.sh" \
+    "启动 / 重启 sudo ./start.sh    停止 sudo ./stop.sh" \
+    "卸载 sudo ./uninstall.sh" \
     "" \
     "${UPGRADE:+升级已完成。}首次使用：打开网页 → 首次初始化 → 设置管理员"
 else
   bad "健康检查未通过（端口 ${PORT}）"
-  info "./logs.sh -n 80   或   journalctl -u trade-journal -n 50"
+  info "排查：sudo ./start.sh 会打印错误日志末尾；也可直接 tail -n 80 $DEPLOY_DIR/logs/server-err.log"
   info "常见原因：PostgreSQL 没跑 / .env 里密码与角色不一致"
   exit 1
 fi

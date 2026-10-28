@@ -75,14 +75,18 @@ for ($attempt = 1; $attempt -le 3 -and -not $pwOk; $attempt++) {
   $t = (& $psql -U postgres -h 127.0.0.1 -tAc "SELECT 1") 2>$null
   if ("$t".Trim() -eq "1") { $pwOk = $true; break }
   if ($attempt -lt 3) {
-    Write-Warn2 "第 $attempt 次认证失败。忘记密码可先跑 .\reset-pg.bat 重置"
+    Write-Warn2 "第 $attempt 次认证失败。忘记密码需重置 postgres 超管密码（见文末提示）"
     $secure = Read-Host "  重新输入 postgres 密码" -AsSecureString
     $PgSuperPassword = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
   }
 }
 if (-not $pwOk) {
   Write-Bad "连续 3 次认证失败"
-  Write-Info2 "先重置密码：powershell -ExecutionPolicy Bypass -File .\reset-pg.ps1"
+  Write-Info2 "重置 postgres 超管密码（需管理员，改 pg_hba.conf 为 trust 后重启服务）："
+  Write-Info2 '  1) 编辑 C:\Program Files\PostgreSQL\16\data\pg_hba.conf，把 localhost 两行的 scram-sha-256 改成 trust'
+  Write-Info2 '  2) Restart-Service postgresql-x64-16'
+  Write-Info2 '  3) psql -U postgres -c "ALTER USER postgres WITH PASSWORD ''新密码'';"'
+  Write-Info2 '  4) 把 pg_hba.conf 改回 scram-sha-256 并再次重启服务'
   exit 1
 }
 Write-Ok "postgres 认证通过"
@@ -231,9 +235,8 @@ if ($okStart) {
 Write-Host "  本机：   http://localhost:$Port"
 Write-Host "  局域网： http://${ip}:$Port"
 Write-Host ""
-Write-Host "  启动 .\start.bat   停止 .\stop.bat   重启 .\restart.bat"
-Write-Host "  状态 .\status.bat  日志 .\logs.bat    备份 .\backup.bat"
-Write-Host "  卸载 .\uninstall.bat"
+Write-Host "  启动 / 重启 .\start.bat     停止 .\stop.bat"
+Write-Host "  卸载        .\uninstall.bat"
 Write-Host ""
 if (-not $isUpgrade) {
   Write-Host "  首次使用：打开网页 → 首次初始化 → 设置管理员账号"

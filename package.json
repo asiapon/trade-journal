@@ -29,11 +29,6 @@
     "self:install": "node scripts/cli.mjs self install",
     "self:start": "node scripts/cli.mjs self start",
     "self:stop": "node scripts/cli.mjs self stop",
-    "self:restart": "node scripts/cli.mjs self restart",
-    "self:status": "node scripts/cli.mjs self status",
-    "self:logs": "node scripts/cli.mjs self logs",
-    "self:backup": "node scripts/cli.mjs self backup",
-    "self:restore": "node scripts/cli.mjs self restore",
     "self:uninstall": "node scripts/cli.mjs self uninstall"
   },
   "devDependencies": {
