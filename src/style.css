@@ -604,10 +604,12 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
   .topbar-brand { font-size: 14px; gap: 6px; }
   .topbar-brand .logo-ico { width: 18px; height: 18px; }
   .topbar-right { gap: 8px; min-width: 0; }
-  .model-badge { max-width: 150px; font-size: 12px; padding: 5px 9px; }
+  .model-badge { max-width: 112px; font-size: 12px; padding: 5px 9px; }
   .mode-badge { display: none; }
-  .user-email { max-width: 84px; font-size: 12px; }
-  .role-badge { display: none; }
+  .user-email { max-width: 68px; font-size: 12px; }
+  /* v3.21.4 角色徽标手机上不再隐藏：管理员/普通用户是账户信息的一部分，
+     手机端看不到就与 PC 不一致了。腾出的宽度从模型徽标和用户名那里挤。 */
+  .role-badge { display: inline-flex; align-items: center; font-size: 11px; padding: 2px 6px; }
   .topbar .btn.sm { padding: 5px 10px; font-size: 12px; }
   .tabs { display: none; }
   .bottom-nav { display: flex; }
@@ -797,27 +799,10 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 /* 明细时间线字号统一 */
 .tl-time, .tl-sub, .tl-num .t-val, .tl-num .m-sub { font-size: 12px; }
 
-/* ---------- 持仓两行单元格（手机档：盈亏 / 成本现价 / 当日盈亏；v3.8.50 起「数量」为单值、不再两行） ---------- */
-#holdTable .two-line, #tvHoldTable .two-line { display: flex; flex-direction: column; line-height: 1.35; }
-#holdTable .two-line .sub, #tvHoldTable .two-line .sub { font-size: 11px; color: var(--ink-3); }
-
-/* ---------- v3.1.1 持仓手机端合并列表格 ---------- */
-#holdTableM, #tvHoldTableM { display: none; min-width: 0; }
-#holdTableM .two-line b, #tvHoldTableM .two-line b { font-weight: 500; }
-@media (max-width: 640px) {
-  #holdTable, #tvHoldTable { display: none; }           /* 手机端隐藏全列表格 */
-  #holdTableM, #tvHoldTableM { display: table; }
-  #holdTableM th, #tvHoldTableM th, #holdTableM td, #tvHoldTableM td { padding: 8px 5px; font-size: 12px; font-weight: 500; font-family: inherit; }
-  #holdTableM .two-line, #tvHoldTableM .two-line { display: flex; flex-direction: column; line-height: 1.4; }
-  #holdTableM .two-line b, #tvHoldTableM .two-line b { font-weight: 500; }
-  #holdTableM .two-line .sub, #tvHoldTableM .two-line .sub { font-size: 12px; font-weight: 500; color: var(--ink-3); }
-  #holdTableM .stock-cell, #tvHoldTableM .stock-cell { min-width: 0; }
-  #holdTableM .sc-name, #tvHoldTableM .sc-name { font-size: 12px; font-weight: 500; }
-  #holdTableM .sc-code, #tvHoldTableM .sc-code { font-size: 12px; font-weight: 500; }
-  #holdTableM .sc-mv, #tvHoldTableM .sc-mv { font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink-2, #444); }
-  #holdTableM .icon-btn, #tvHoldTableM .icon-btn { font-size: 12px; font-weight: 500; }
-}
-
+/* ---------- 持仓表：v3.21.4 起与自选/交易共用 .tbl-stack 堆叠布局 ----------
+   原来这里养着一整套 #tvHoldTableM（手机端合并列表格）：5 列、静态表头、
+   字段分组与 PC 版不同（成本/现价挤一格、盈亏%并进盈亏）。那张表已删除，
+   手机端直接复用 PC 行的 9 个字段，由 .tbl-stack 重排成卡片，信息零损失。 */
 /* ---------- v3.2.1 交易记录检索增强 ---------- */
 .filter-stats {
   display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 6px 2px 0;
@@ -1043,19 +1028,18 @@ tr.stockagg:hover td { background: var(--bg); }
   #watchModal .add-row #tvWfNoteQuick { flex: 1 1 0; width: auto; min-width: 0; }
   #watchModal .add-row #tvWfGroupQuick { flex: 0 0 auto; width: 100%; }
 }
-/* ---------- v3.8.86 PC 端弹窗关掉「股票联想」下拉 ----------
-   用户反馈：弹窗总共就 3 行，股票框和分组框各带一个下拉没必要，PC 上用鼠标
-   直接敲代码更顺，联想弹层反而遮住下面两行。
-   做法：只在 PC 档隐藏 #tvWfSug（连同防护罩 .sug-shield 一起失效是无害的，
-   因为 bindSuggest 的 close() 已把 box.hidden 置回 true，只是不再显示）。
-   手机端保留（触屏敲拼音首字母的场景更需要它）。
-   注意：这里只是「不显示」，输入框仍可正常输入代码/名称/拼音，提交逻辑不变。 */
-@media (min-width: 721px) {
-  #watchModal #tvWfSug { display: none !important; }
-}
 /* 【v3.8.79「下拉把页面全挡」】旧 `.sug-box { max-height: 264px }` 在手机上
    8 条命中时能盖住大半个屏。弹窗内收窄上限，并同时看视口高度。 */
 #watchModal .sug-box { max-height: min(196px, 32vh); }
+/* v3.21.4 PC 端恢复「股票联想」下拉（撤销 v3.8.86），必须放在上一条之后：
+   v3.8.86 当初在 PC 档整块隐藏 #tvWfSug，理由是「弹窗只有 3 行，下拉遮住下面
+   两行」。代价是 PC 端加自选只能手敲 6 位代码，与手机端能力不一致 —— 用户要求
+   各端信息/能力一致，只允许布局不同。
+   现在不隐藏，改为压低高度：PC 档上限 132px（约 4 条候选，超出内部滚动），
+   遮挡范围从「两行表单」缩到一行左右；≤720px 沿用上面的 196px / 32vh。 */
+@media (min-width: 721px) {
+  #watchModal .sug-box { max-height: 132px; }
+}
 
 /* ---------- v3.8.82 分组自绘下拉（替代原生 datalist） ----------
    原生 datalist 的弹层宽度由浏览器决定，PC 上远宽于分组框（截图可证），且无法用
@@ -1707,7 +1691,8 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 .qa-layout.no-jump { grid-template-columns: 260px minmax(0, 1fr); }
 .qa-right { display: flex; flex-direction: column; gap: 8px; overflow: hidden; border-radius: var(--card-r, 12px); background: var(--card, #fff); padding: 10px; }
 .qa-right.collapsed { display: none; }
-.qa-layout.no-jump .qa-right { display: none; }
+/* 折叠（no-jump）只在宽屏生效：≤1080 的右栏已改成滑出面板，由 .jump-open 控制 */
+@media (min-width: 1081px) { .qa-layout.no-jump .qa-right { display: none; } }
 .qa-jump-head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--ink-2, #475569); }
 .qa-jump-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
 .qa-jump-item {
@@ -1717,13 +1702,24 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 }
 .qa-jump-item:hover { background: var(--bg, #f1f5f9); color: var(--ink); }
 .qa-jump-item.flash { background: var(--bg, #f1f5f9); }
-.qa-right-toggle { position: absolute; right: -10px; top: -10px; display: none; }
-.qa-layout.no-jump .qa-right-toggle { display: inline-block; }
-/* 窄屏：右面板直接隐藏（布局已变单列） */
+/* v3.21.4 ≤1080px：「本会话提问」不再直接消失，收成右侧滑出面板。
+   原来这里是 .qa-right { display: none } —— 1024/1366 笔记本上这块信息永久
+   不可达；配套的 .qa-right-toggle 规则指向的元素在 HTML 里根本不存在（死代码，
+   已删）。现在由 .qa-mtop 的「提问」按钮切换 .jump-open，点遮罩或选中条目即收。 */
 @media (max-width: 1080px) {
   .qa-layout, .qa-layout.no-jump { grid-template-columns: 260px minmax(0, 1fr); }
-  .qa-right { display: none; }
+  .qa-layout .qa-right {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 320;
+    width: min(82vw, 300px); max-height: none; border-radius: 0;
+    border: 0; border-left: 1px solid var(--line);
+    box-shadow: -14px 0 40px rgba(15, 23, 42, .18);
+    transform: translateX(103%); transition: transform .22s ease;
+  }
+  .qa-layout.jump-open .qa-right { transform: none; }
+  .qa-layout.jump-open .qa-jump-mask { display: block; }
 }
+/* 遮罩：默认不占位，只在滑出面板打开时出现 */
+.qa-jump-mask { display: none; position: fixed; inset: 0; z-index: 310; background: rgba(15, 23, 42, .35); }
 .qa-side { display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
 .qa-history { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
 .qa-hist-item {
@@ -2084,8 +2080,14 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 #qaDrawer { position: fixed; top: 0; left: 0; bottom: 0; width: min(78vw, 320px); background: var(--card, #fff); z-index: 310; box-shadow: 0 0 40px rgba(15, 23, 42, 0.2); display: flex; flex-direction: column; gap: 10px; padding: 14px 12px; overflow-y: auto; }
 .qa-drawer-head { display: flex; align-items: center; justify-content: space-between; }
 #qaHistoryListM { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+/* v3.21.4 顶部工具条从 720 提到 1080：它现在承载「提问」入口，
+   而右栏滑出面板从 1080 就已经生效，不提前显示按钮就没处打开。
+   641~1080 区间左侧会话栏仍在，抽屉/新对话两个按钮会重复，故隐藏。 */
+@media (max-width: 1080px) { .qa-mtop { display: flex; } }
+@media (min-width: 641px) and (max-width: 1080px) {
+  .qa-mtop #qaDrawerBtn, .qa-mtop #qaNewBtnM { display: none; }
+}
 @media (max-width: 720px) {
-  .qa-mtop { display: flex; }
   .qa-side { display: none; }
   .qa-main { height: calc(100vh - var(--nav-h) - 110px); }
 }
@@ -2138,37 +2140,52 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
    不加这层门槛会把手机端重新拉成三栏（踩过这个坑）。
    只管列宽，不碰 display —— 右栏的收起/隐藏逻辑（.collapsed / .no-jump）保持原样。 */
 .qa-right { border: 1px solid var(--line); }   /* 与 .card 同边框，底边不再比两侧低 5px */
-@media (min-width: 641px) {
+@media (min-width: 1081px) {
   .qa-layout { grid-template-columns: 244px minmax(0, 1fr) 208px; }
   .qa-layout.no-jump { grid-template-columns: 244px minmax(0, 1fr); }
 }
-@media (min-width: 641px) and (max-width: 1080px) {
-  .qa-layout, .qa-layout.no-jump { grid-template-columns: 244px minmax(0, 1fr); }
-}
 
-/* ---------- R2 宽表在手机上：先砍列，再给「还能横滑」的视觉提示 ---------- */
+/* ---------- 手机端宽表：不砍列，改成「一行一卡」的堆叠布局 ----------
+   v3.21.4 取代原来的 display:none 砍列（自选 12→5 列、交易 9→5 列）。
+   砍列确实能把表塞进 390px，但字段是真的没了：今开/最高/最低/昨收/自选日/
+   自选价/备注，以及交易的价格/数量/费用/发生金额，手机上永远看不到。
+   用户要求「各端信息必须一致，只允许布局不同」，故改为：三张表共用同一份
+   DOM（.tbl-stack），每个 td 自带 data-label，≤640px 时把 <tr> 变成两列网格，
+   字段名由 ::before 取 attr(data-label) 渲染 —— 信息一条不少，只是从
+   「横向表格」变成「竖向卡片」。表头在手机上隐藏（label 已逐格标注）。
+   代价：手机上不能点表头排序（<thead> 不显示），PC 不受影响。 */
 @media (max-width: 640px) {
-  /* 自选表 12 列 → 5 列：保留 股票 / 最新 / 涨幅 / 自选收益 / 操作。
-     原来 12 列全靠横滑，而「操作」列（删/改）在首屏之外，用户根本够不到。 */
-  #tvWatchTable th:nth-child(4), #tvWatchTable td:nth-child(4),   /* 今开 */
-  #tvWatchTable th:nth-child(5), #tvWatchTable td:nth-child(5),   /* 最高 */
-  #tvWatchTable th:nth-child(6), #tvWatchTable td:nth-child(6),   /* 最低 */
-  #tvWatchTable th:nth-child(7), #tvWatchTable td:nth-child(7),   /* 昨收 */
-  #tvWatchTable th:nth-child(8), #tvWatchTable td:nth-child(8),   /* 自选日 */
-  #tvWatchTable th:nth-child(9), #tvWatchTable td:nth-child(9),   /* 自选价 */
-  #tvWatchTable th:nth-child(11), #tvWatchTable td:nth-child(11)  /* 备注 */
-  { display: none; }
+  .tbl-stack { min-width: 0; }
+  .tbl-stack thead { display: none; }
+  .tbl-stack, .tbl-stack tbody { display: block; width: 100%; }
+  .tbl-stack tr {
+    display: grid; grid-template-columns: 1fr 1fr;
+    column-gap: 14px; row-gap: 3px;
+    padding: 10px 2px; border-bottom: 1px solid var(--line);
+  }
+  .tbl-stack tr:last-child { border-bottom: 0; }
+  .tbl-stack td {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    padding: 1px 0; border: 0; text-align: left; min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .tbl-stack td::before {
+    content: attr(data-label);
+    flex: none; font-size: 11px; color: var(--ink-3); font-weight: 400;
+  }
+  .tbl-stack td:not([data-label])::before { content: none; }
+  .tbl-stack td.cell-title { grid-column: 1 / -1; justify-content: flex-start; }
+  .tbl-stack td.cell-note { grid-column: 1 / -1; display: block; }
+  .tbl-stack td.cell-note::before { display: inline; margin-right: 6px; }
+  .tbl-stack td.cell-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .tbl-stack td[colspan] { grid-column: 1 / -1; }
+  /* 交易表「点股票行展开」的明细行：整行铺满，内部仍走自己的横向滚动 */
+  .tbl-stack .stock-detail-row { display: block; padding: 0; border-bottom: 0; }
+  .tbl-stack .stock-detail-row > td { display: block; padding: 10px 14px; }
 
-  /* 交易表 9 列 → 5 列：保留 时间 / 方向 / 股票 / 成交金额 / 操作 */
-  #tradeTable th:nth-child(4), #tradeTable td:nth-child(4),       /* 价格 */
-  #tradeTable th:nth-child(5), #tradeTable td:nth-child(5),       /* 数量 */
-  #tradeTable th:nth-child(7), #tradeTable td:nth-child(7),       /* 费用 */
-  #tradeTable th:nth-child(8), #tradeTable td:nth-child(8)        /* 发生金额 */
-  { display: none; }
-
-  /* 依然会横滑的表（持仓全列表、日志等）：左右两端加渐隐阴影，
-     纯 CSS 实现，滑到尽头阴影自动消失，不需要 JS 监听。 */
-  .table-scroll {
+  /* 仍然会横滑的表（用户管理）：左右两端渐隐阴影，滑到尽头自动消失。
+     只挂 .scroll-hint，别再让堆叠表也长出阴影（它已经没有横向溢出）。 */
+  .scroll-hint {
     background:
       linear-gradient(to right, var(--card) 40%, rgba(255, 255, 255, 0)) left center / 24px 100% no-repeat local,
       linear-gradient(to left, var(--card) 40%, rgba(255, 255, 255, 0)) right center / 24px 100% no-repeat local,

@@ -7,14 +7,11 @@ import { emQuote, txQuote } from '../sources/quotes.js';
 import { TABLES, BACKEND_URL, RPC_BASE, ACCESS_KEY, CLOUD_HOST, rpc, cloudStore, localStore, setStore, loadAll, saveSetting, sessionHooks, storageHooks } from '../storage/gateway.js';
 import { S } from '../core/app-state.js';
 
-export const SUG_OFF_IN_WATCH_PC = (() => {
-  let mql = null;
-  try { mql = window.matchMedia('(min-width: 721px)'); } catch (e) { /* 老浏览器忽略 */ }
-  return boxId => {
-    if (boxId !== 'tvWfSug') return false;
-    return !!(mql && mql.matches);
-  };
-})();
+/* v3.21.4 起 PC 端不再关闭弹窗内的股票联想（原 SUG_OFF_IN_WATCH_PC 已删）。
+   v3.8.86 当初关掉它，是因为「弹窗只有 3 行，下拉遮住下面两行」；但代价是
+   PC 端加自选只能手敲 6 位代码，与手机端能力不一致。现在改为「保留联想、
+   压低高度」：PC 档 .sug-box 的 max-height 收到 132px（约 4 条候选），
+   超出内部滚动，遮挡范围从「两行表单」缩到「一行左右」。 */
 
 export function bindSuggest(inputId, boxId, onPick) {
   const inp = $(inputId), box = $(boxId);
@@ -26,7 +23,6 @@ export function bindSuggest(inputId, boxId, onPick) {
     if (shield) { shield.remove(); shield = null; }
   };
   const showShield = () => {
-    if (SUG_OFF_IN_WATCH_PC(boxId)) return;   /* v3.8.86 PC 弹窗内联想已关，别插罩拦点击 */
     if (shield) { if (shieldTimer) { clearTimeout(shieldTimer); shieldTimer = null; } return; }
     shield = document.createElement('div');
     shield.className = 'sug-shield';
@@ -40,9 +36,6 @@ export function bindSuggest(inputId, boxId, onPick) {
     if (shield && !shieldTimer) shieldTimer = setTimeout(removeShieldNow, 350);
   };
   inp.addEventListener('input', () => {
-    /* v3.8.86 PC 弹窗内直接不渲染候选（顺手把可能残留的下拉/防护罩收掉），
-       输入框本身仍照常收字符，提交走 StockDict.resolve 不受影响。 */
-    if (SUG_OFF_IN_WATCH_PC(boxId)) { close(); removeShieldNow(); return; }
     const v = inp.value.trim();
     if (!v || !StockDict.ready) { close(); return; }
     items = StockDict.search(v, 8);

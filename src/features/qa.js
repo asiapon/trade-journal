@@ -732,6 +732,14 @@ export function renderQaJump() {
 }
 export function bindQaJump() {
   const list = $('qaJumpList'), toggle = $('qaJumpToggle');
+  /* v3.21.4 ≤1080px 时右栏是「滑出面板」而不是第三个栅格列（见 style.css），
+     开关语义随之变化：宽屏是「折叠后不留位置」，窄屏是「默认关、点开覆盖」。
+     原来窄屏直接 display:none，这块信息在 1024/1366 笔记本上根本打不开。 */
+  const layout = document.querySelector('.qa-layout');
+  const narrow = () => window.matchMedia('(max-width: 1080px)').matches;
+  const setJumpOpen = v => { if (layout) layout.classList.toggle('jump-open', !!v); };
+  const jumpOpen = () => !!(layout && layout.classList.contains('jump-open'));
+
   if (list) list.addEventListener('click', e => {
     const b = e.target.closest('.qa-jump-item[data-uidx]');
     if (!b) return;
@@ -740,11 +748,19 @@ export function bindQaJump() {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     el.classList.add('flash');
     setTimeout(() => el.classList.remove('flash'), 1200);
+    if (narrow()) setJumpOpen(false);          /* 窄屏选完就收起，别挡着正文 */
   });
   if (toggle) toggle.addEventListener('click', () => {
+    if (narrow()) { setJumpOpen(false); return; }
     try { localStorage.setItem('sj_qa_jump', qaJumpCollapsed() ? '1' : '0'); } catch (e) { /* */ }
     renderQaJump();
   });
+  /* 窄屏专用入口：.qa-mtop 里的「提问」按钮 + 遮罩 */
+  const btnM = $('qaJumpBtn'), mask = $('qaJumpMask');
+  if (btnM) btnM.addEventListener('click', () => setJumpOpen(!jumpOpen()));
+  if (mask) mask.addEventListener('click', () => setJumpOpen(false));
+  /* 拉大窗口时把窄屏的滑出状态清掉，否则面板会以 fixed 定位残留在屏幕上 */
+  window.addEventListener('resize', () => { if (!narrow() && jumpOpen()) setJumpOpen(false); });
   renderQaJump();
 }
 

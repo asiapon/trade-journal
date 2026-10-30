@@ -134,20 +134,24 @@ export function paintWatch(m, M) {
   if (!table) return;                       // 该挂载点不存在（例如页面已下线）
   const empty = el(m.empty);
   const FAIL = '<span class="na-tag">获取失败</span>';
+  /* v3.21.4 每个 td 带 data-label：≤640px 时 .tbl-stack 把整行拆成两列卡片，
+     字段名由 CSS 的 ::before 取 attr(data-label) 渲染。这样手机端与 PC 端
+     是同一份 DOM、同样的 12 个字段，只是排版不同（原来手机端直接 display:none
+     砍掉 7 列，信息是真的丢了）。 */
   table.querySelector('tbody').innerHTML = M.items.map(({ w, q, price, chg, anchor, gain, addDate }) => {
     return `<tr data-id="${w.id}">
-      <td><div class="stock-cell"><span class="sc-name">${esc(w.stock_name || '')}</span><span class="sc-code">${esc(w.stock_code)}</span></div></td>
-      <td class="num">${price != null ? fmt2(price) : FAIL}</td>
-      <td class="num ${chg != null ? pnlCls(chg) : ''}">${chg != null ? fmtPct(chg) : FAIL}</td>
-      <td class="num">${q && q.open != null ? fmt2(q.open) : '—'}</td>
-      <td class="num">${q && q.high != null ? fmt2(q.high) : '—'}</td>
-      <td class="num">${q && q.low != null ? fmt2(q.low) : '—'}</td>
-      <td class="num">${q && q.prevClose != null ? fmt2(q.prevClose) : '—'}</td>
-      <td class="num hint adate">${addDate}</td>
-      <td class="num">${anchor != null ? fmtP(anchor) : '—'}</td>
-      <td class="num ${gain != null ? pnlCls(gain) : ''}">${gain != null ? fmtPct(gain) : '—'}</td>
-      <td class="hint">${esc(w.note || '')}</td>
-      <td><div class="row-actions">
+      <td class="cell-title"><div class="stock-cell"><span class="sc-name">${esc(w.stock_name || '')}</span><span class="sc-code">${esc(w.stock_code)}</span></div></td>
+      <td class="num" data-label="最新">${price != null ? fmt2(price) : FAIL}</td>
+      <td class="num ${chg != null ? pnlCls(chg) : ''}" data-label="涨幅">${chg != null ? fmtPct(chg) : FAIL}</td>
+      <td class="num" data-label="今开">${q && q.open != null ? fmt2(q.open) : '—'}</td>
+      <td class="num" data-label="最高">${q && q.high != null ? fmt2(q.high) : '—'}</td>
+      <td class="num" data-label="最低">${q && q.low != null ? fmt2(q.low) : '—'}</td>
+      <td class="num" data-label="昨收">${q && q.prevClose != null ? fmt2(q.prevClose) : '—'}</td>
+      <td class="num hint adate" data-label="自选日">${addDate}</td>
+      <td class="num" data-label="自选价">${anchor != null ? fmtP(anchor) : '—'}</td>
+      <td class="num ${gain != null ? pnlCls(gain) : ''}" data-label="自选收益">${gain != null ? fmtPct(gain) : '—'}</td>
+      <td class="hint cell-note" data-label="备注">${esc(w.note || '')}</td>
+      <td class="cell-actions"><div class="row-actions">
         <button class="icon-btn edit-watch" data-id="${w.id}">编辑</button>
         <button class="icon-btn del del-watch" data-id="${w.id}">删除</button>
       </div></td>

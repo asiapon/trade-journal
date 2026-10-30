@@ -197,36 +197,26 @@ export function renderHoldings() {
     + (missingQty ? `<span class="hold-warn">${missingQty} 只现价未获取</span>` : '');
   const sumHtmlOf = () => (rows.length ? tvStatsHtml : '');
 
-  /* PC 全列表格：股票/市值/盈亏/盈亏%/数量/成本价/现价/当日盈亏/当日盈亏%
+  /* 全列表格：股票/市值/盈亏/盈亏%/数量/成本价/现价/当日盈亏/当日盈亏%
      （v3.8.50：「持仓/可用」改为「数量」——本表只是交易日志的持仓汇总，
       不存在「当日买入不可卖」的交易约束，故不再区分可用；「仓位」列一并下线，
-      因为没有账户总资产口径，单股占比没有意义） */
+      因为没有账户总资产口径，单股占比没有意义）
+     v3.21.4 手机端不再另用一套合并列表格，改为「同一份 DOM + 堆叠布局」：
+     每个 td 带 data-label，≤640px 时由 CSS 把每行拆成两列卡片（标签由 ::before 取）。
+     原来手机版把「成本/现价」「盈亏/盈亏%」各挤成一格，字段其实没丢，但顺序与分组
+     和 PC 不同、且表头不可排序；两套模板也意味着以后加字段必须改两遍。 */
   const pcHtml = rows.map(r => {
     const { h, price, costPrice, mv, float, floatPct, dayPnl, dayPct } = r;
     return `<tr data-code="${esc(h.code)}">
-      <td><div class="stock-cell"><span class="sc-name">${esc(h.name || h.code)}${r.cleared ? ' <span class="tag cleared">已清仓</span>' : ''}</span><span class="sc-code">${esc(h.code)}</span></div></td>
-      <td class="num">${mv != null ? fmt2(mv) : NA}</td>
-      <td class="num ${float != null ? pnlCls(float) : ''}">${float != null ? (float >= 0 ? '+' : '') + fmt2(float) : NA}</td>
-      <td class="num ${floatPct != null ? pnlCls(floatPct) : ''}">${floatPct != null ? fmtPct(floatPct) : NA}</td>
-      <td class="num">${h.qty}</td>
-      <td class="num">${costPrice != null ? fmtP(costPrice) : '—'}</td>
-      <td class="num price-cell">${price != null ? fmt2(price) : NA}</td>
-      <td class="num ${dayPnl != null ? pnlCls(dayPnl) : ''}">${dayPnl != null ? (dayPnl >= 0 ? '+' : '') + fmt2(dayPnl) : NA}</td>
-      <td class="num ${dayPct != null ? pnlCls(dayPct) : ''}">${dayPct != null ? fmtPct(dayPct) : NA}</td>
-    </tr>`;
-  }).join('');
-
-  /* 手机端合并列表格：市值(含股票信息) / 盈亏 / 数量 / 成本现价 / 当日盈亏
-     （v3.8.50：市值列不再重复显示股票代码 → 名称 + 市值两行） */
-  const mobileHtml = rows.map(r => {
-    const { h, price, costPrice, mv, float, floatPct, dayPnl, dayPct } = r;
-    const sgn = v => (v >= 0 ? '+' : '');
-    return `<tr data-code="${esc(h.code)}">
-      <td><div class="stock-cell"><span class="sc-name">${esc(h.name || h.code)}${r.cleared ? ' <span class="tag cleared">已清仓</span>' : ''}</span><span class="sc-mv">${mv != null ? fmt2(mv) : NA}</span></div></td>
-      <td class="num"><div class="two-line"><b class="${float != null ? pnlCls(float) : ''}">${float != null ? sgn(float) + fmt2(float) : NA}</b><span class="sub ${floatPct != null ? pnlCls(floatPct) : ''}">${floatPct != null ? fmtPct(floatPct) : ''}</span></div></td>
-      <td class="num">${h.qty}</td>
-      <td class="num"><div class="two-line"><span>${costPrice != null ? fmtP(costPrice) : '—'}</span><span class="sub">${price != null ? fmt2(price) : '未获取'}</span></div></td>
-      <td class="num"><div class="two-line"><b class="${dayPnl != null ? pnlCls(dayPnl) : ''}">${dayPnl != null ? sgn(dayPnl) + fmt2(dayPnl) : NA}</b><span class="sub ${dayPct != null ? pnlCls(dayPct) : ''}">${dayPct != null ? fmtPct(dayPct) : ''}</span></div></td>
+      <td class="cell-title"><div class="stock-cell"><span class="sc-name">${esc(h.name || h.code)}${r.cleared ? ' <span class="tag cleared">已清仓</span>' : ''}</span><span class="sc-code">${esc(h.code)}</span></div></td>
+      <td class="num" data-label="市值">${mv != null ? fmt2(mv) : NA}</td>
+      <td class="num ${float != null ? pnlCls(float) : ''}" data-label="盈亏">${float != null ? (float >= 0 ? '+' : '') + fmt2(float) : NA}</td>
+      <td class="num ${floatPct != null ? pnlCls(floatPct) : ''}" data-label="盈亏%">${floatPct != null ? fmtPct(floatPct) : NA}</td>
+      <td class="num" data-label="数量">${h.qty}</td>
+      <td class="num" data-label="成本价">${costPrice != null ? fmtP(costPrice) : '—'}</td>
+      <td class="num price-cell" data-label="现价">${price != null ? fmt2(price) : NA}</td>
+      <td class="num ${dayPnl != null ? pnlCls(dayPnl) : ''}" data-label="当日盈亏">${dayPnl != null ? (dayPnl >= 0 ? '+' : '') + fmt2(dayPnl) : NA}</td>
+      <td class="num ${dayPct != null ? pnlCls(dayPct) : ''}" data-label="当日盈亏%">${dayPct != null ? fmtPct(dayPct) : NA}</td>
     </tr>`;
   }).join('');
 
@@ -234,8 +224,8 @@ export function renderHoldings() {
   for (const m of HOLD_MOUNTS) {
     const pcEl = document.getElementById(m.pc);
     if (pcEl) pcEl.querySelector('tbody').innerHTML = pcHtml;
-    const mbEl = document.getElementById(m.mobile);
-    if (mbEl) mbEl.querySelector('tbody').innerHTML = mobileHtml;
+    const mbEl = m.mobile ? document.getElementById(m.mobile) : null;
+    if (mbEl) mbEl.querySelector('tbody').innerHTML = pcHtml;
     const sumEl = document.getElementById(m.summary);
     if (sumEl) sumEl.innerHTML = sumHtmlOf();
     const emptyEl = document.getElementById(m.empty);

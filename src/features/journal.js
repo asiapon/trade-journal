@@ -382,12 +382,12 @@ export function renderTrades() {
     const list = [...m.values()].sort((a, b) => b.amt - a.amt);
     $('tradeTable').querySelector('tbody').innerHTML = list.map(g => `
       <tr class="stockagg" data-code="${esc(g.code)}" title="点击展开每笔明细与期间盈亏">
-        <td><div class="stock-cell"><span class="sc-name">${esc(g.name)}</span><span class="sc-code">${esc(g.code)}</span></div></td>
-        <td class="num">${g.buyQty || '—'} / ${g.sellQty || '—'}</td>
-        <td class="num">${g.buyQty ? fmt2(g.buyAmt / g.buyQty) : '—'} / ${g.sellQty ? fmt2(g.sellAmt / g.sellQty) : '—'}</td>
-        <td class="num">${fmt2(g.amt)}</td>
-        <td class="num">${g.buys} / ${g.sells}</td>
-        <td class="num">${fmt2(g.fee)}</td>
+        <td class="cell-title"><div class="stock-cell"><span class="sc-name">${esc(g.name)}</span><span class="sc-code">${esc(g.code)}</span></div></td>
+        <td class="num" data-label="成交量(买/卖)">${g.buyQty || '—'} / ${g.sellQty || '—'}</td>
+        <td class="num" data-label="成交均价(买/卖)">${g.buyQty ? fmt2(g.buyAmt / g.buyQty) : '—'} / ${g.sellQty ? fmt2(g.sellAmt / g.sellQty) : '—'}</td>
+        <td class="num" data-label="成交额">${fmt2(g.amt)}</td>
+        <td class="num" data-label="买/卖笔数">${g.buys} / ${g.sells}</td>
+        <td class="num" data-label="费用">${fmt2(g.fee)}</td>
       </tr>`).join('');
     /* 恢复已展开的股票明细 */
     if (stockOpenCodes.size) {
@@ -407,15 +407,15 @@ export function renderTrades() {
     const dateStr = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
     const timeStr = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
     return `<tr data-id="${t.id}">
-      <td class="tm-cell">${dateStr}<br><span class="tm-sub">${timeStr}</span></td>
-      <td><span class="tag ${t.transaction_type}">${t.transaction_type === 'buy' ? '买入' : '卖出'}</span></td>
-      <td><div class="stock-cell"><span class="sc-name">${esc(t.stock_name || '')}</span><span class="sc-code">${esc(t.stock_code)}</span></div></td>
-      <td class="num">${fmt2(t.price)}</td>
-      <td class="num">${t.quantity}</td>
-      <td class="num">${fmt2(t.gross_amount)}</td>
-      <td class="num fee-cell" data-id="${t.id}" title="点击展开费用明细">${fmt2(fee)}</td>
-      <td class="num">${fmt2(Math.abs(t.net_amount != null ? t.net_amount : t.gross_amount - fee))}</td>
-      <td><div class="row-actions">
+      <td class="tm-cell" data-label="时间">${dateStr}<br><span class="tm-sub">${timeStr}</span></td>
+      <td data-label="方向"><span class="tag ${t.transaction_type}">${t.transaction_type === 'buy' ? '买入' : '卖出'}</span></td>
+      <td class="cell-title"><div class="stock-cell"><span class="sc-name">${esc(t.stock_name || '')}</span><span class="sc-code">${esc(t.stock_code)}</span></div></td>
+      <td class="num" data-label="价格">${fmt2(t.price)}</td>
+      <td class="num" data-label="数量">${t.quantity}</td>
+      <td class="num" data-label="成交金额">${fmt2(t.gross_amount)}</td>
+      <td class="num fee-cell" data-id="${t.id}" data-label="费用" title="点击展开费用明细">${fmt2(fee)}</td>
+      <td class="num" data-label="发生金额">${fmt2(Math.abs(t.net_amount != null ? t.net_amount : t.gross_amount - fee))}</td>
+      <td class="cell-actions"><div class="row-actions">
         <button class="icon-btn edit-trade" data-id="${t.id}">编辑</button>
         <button class="icon-btn del del-trade" data-id="${t.id}">删除</button>
       </div></td>

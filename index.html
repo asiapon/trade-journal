@@ -148,17 +148,14 @@
         </div>
         <div class="idx-bar idx-bar-lg idx-bar-eq" id="tvHoldSummary"></div>
         <div class="table-scroll">
-          <table class="tbl" id="tvHoldTable">
+          <!-- v3.21.4 只保留这一张表：手机端不再另建合并列表格，改用 .tbl-stack
+               把同一份行数据堆叠成卡片（每个 td 的 data-label 当字段名）。
+               两套模板时代，手机版字段顺序、分组都与 PC 不同，加字段要改两遍。 -->
+          <table class="tbl tbl-stack" id="tvHoldTable">
             <thead><tr>
               <th>股票</th><th class="num sortable" data-sort="mv">市值</th><th class="num sortable" data-sort="float">盈亏</th><th class="num sortable" data-sort="floatPct">盈亏%</th>
               <th class="num sortable" data-sort="qty" title="数量 = 累计持仓股数（仅作记录，不作 T+1 可卖约束）">数量</th><th class="num sortable" data-sort="cost">成本价</th><th class="num sortable" data-sort="price">现价</th>
               <th class="num sortable" data-sort="dayPnl">当日盈亏</th><th class="num sortable" data-sort="dayPct">当日盈亏%</th>
-            </tr></thead>
-            <tbody></tbody>
-          </table>
-          <table class="tbl" id="tvHoldTableM">
-            <thead><tr>
-              <th>市值</th><th class="num">盈亏</th><th class="num" title="数量 = 累计持仓股数（仅作记录，不作 T+1 可卖约束）">数量</th><th class="num">成本/现价</th><th class="num">当日盈亏</th>
             </tr></thead>
             <tbody></tbody>
           </table>
@@ -176,7 +173,7 @@
         </div>
         <div class="wtabs" id="tvWatchTabs"></div>
         <div class="table-scroll">
-          <table class="tbl" id="tvWatchTable">
+          <table class="tbl tbl-stack" id="tvWatchTable">
             <thead><tr>
               <th>股票</th><th class="num sortable" data-sort="price">最新</th><th class="num sortable" data-sort="chg">涨幅</th>
               <th class="num sortable" data-sort="open">今开</th><th class="num sortable" data-sort="high">最高</th><th class="num sortable" data-sort="low">最低</th><th class="num sortable" data-sort="prevClose">昨收</th>
@@ -219,7 +216,7 @@
         </div>
         <div class="filter-stats" id="ftStats"></div>
         <div class="table-scroll">
-          <table class="tbl" id="tradeTable">
+          <table class="tbl tbl-stack" id="tradeTable">
             <thead><tr id="tradeTheadRow">
               <th>时间</th><th>方向</th><th>股票</th><th class="num">价格</th><th class="num">数量</th>
               <th class="num">成交金额</th><th class="num">费用</th><th class="num">发生金额</th><th>操作</th>
@@ -427,6 +424,7 @@
           <div class="qa-mtop">
             <button id="qaDrawerBtn" class="btn ghost sm" type="button">会话<span id="qaDrawerBadge" class="qa-drawer-badge" hidden></span></button>
             <button id="qaNewBtnM" class="btn ghost sm" type="button">＋ 新对话</button>
+            <button id="qaJumpBtn" class="btn ghost sm" type="button" title="本会话提问导航">提问</button>
           </div>
           <div id="qaMessages" class="qa-messages"></div>
           <div class="qa-composer">
@@ -466,6 +464,7 @@
             <input type="file" id="qaFileInput" hidden multiple accept=".txt,.csv,.md,.json,.log,.yml,.yaml,.xml,.html,.htm,.py,.js,.ts,.sql,.ini,.conf,image/*">
           </div>
         </div>
+        <div id="qaJumpMask" class="qa-jump-mask"></div>
         <aside class="qa-right" id="qaJumpPanel">
           <div class="qa-jump-head">
             <span>本会话提问</span>
@@ -608,7 +607,7 @@
           </label>
           <div class="form-actions"><button type="submit" class="btn primary">创建账号</button></div>
         </form>
-        <div class="table-scroll">
+        <div class="table-scroll scroll-hint">
           <table class="tbl" id="userTable">
             <thead><tr><th>用户名</th><th>角色</th><th>创建时间</th><th>操作</th></tr></thead>
             <tbody></tbody>

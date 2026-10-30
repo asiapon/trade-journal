@@ -578,16 +578,8 @@ export function bindEvents() {
     initQuoteFabDrag();
     syncQuoteFab();
   }
-  /* v3.8.69 跨 720px 断点时重渲染指数条：涨跌额只在窄屏显示，转屏 / 拉窗口后
-     必须重新生成 HTML（否则从宽变窄不会冒出来）。只在「跨过断点」时触发一次，
-     普通 resize（手机地址栏收起等）不重渲染，避免白白重建 DOM */
-  let idxNarrowPrev = window.matchMedia('(max-width: 720px)').matches;
-  window.addEventListener('resize', () => {
-    const now = window.matchMedia('(max-width: 720px)').matches;
-    if (now === idxNarrowPrev) return;
-    idxNarrowPrev = now;
-    if (typeof renderToday === 'function') renderToday();
-  });
+  /* v3.21.3 起涨跌额在所有宽度都渲染，原「跨 720px 断点重渲染指数条」的监听
+     已无作用（两端 HTML 完全相同），删除以免每次拉窗口跨断点白重建一次总览 DOM。 */
   $('holdRecBtn').addEventListener('click', () => openRecModal());
   /* 空态「去记一笔」：每个持仓挂载点各绑一份 */
   for (const m of HOLD_MOUNTS) {
