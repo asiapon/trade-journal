@@ -517,10 +517,10 @@
           </div>
           <p class="hint">接入任意 OpenAI 接口兼容的服务（DeepSeek、硅基流动等）。API Key 仅保存在本机浏览器，不会上传云端。</p>
           <form id="customModelForm" class="form-grid">
-            <label>名称<input type="text" id="cmName" placeholder="如 DeepSeek" required></label>
-            <label class="span2">Base URL<input type="text" id="cmBaseUrl" placeholder="https://api.deepseek.com/v1" required></label>
-            <label>模型 ID<input type="text" id="cmModel" placeholder="deepseek-chat" required></label>
-            <label class="span2">API Key<input type="password" id="cmApiKey" placeholder="sk-..." required></label>
+                        <label>名称<input type="text" id="cmName" placeholder="如 DeepSeek" required></label>
+                        <label>模型 ID<input type="text" id="cmModel" placeholder="deepseek-chat" required></label>
+                        <label class="span2">Base URL<input type="text" id="cmBaseUrl" placeholder="https://api.deepseek.com/v1" required></label>
+                        <label class="span2">API Key<input type="password" id="cmApiKey" placeholder="sk-..." required></label>
             <div class="form-actions span2"><button type="submit" class="btn ghost">添加自定义模型</button></div>
           </form>
           <div id="customModelList" class="mini-list"></div>
@@ -626,7 +626,7 @@
           <button class="btn ghost" id="importBtn" type="button">导入 JSON</button>
           <button class="btn ghost" id="feeRecalcBtn" type="button">按当前费率重算历史费用</button>
           <button class="btn ghost" id="seedBtn" type="button">载入演示数据</button>
-          <button class="btn danger" id="clearBtn" type="button">清空全部数据</button>
+          <button class="btn ghost danger" id="clearBtn" type="button">清空全部数据</button>
           <input type="file" id="importFile" accept=".json" hidden>
         </div>
         <p class="hint" id="seedHint" hidden>检测到当前没有数据，可先载入演示数据体验（可随时清空）</p>

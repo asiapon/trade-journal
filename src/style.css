@@ -23,6 +23,10 @@
   --radius: 12px;
   --radius-sm: 8px;
   --shadow: 0 1px 3px rgba(23, 30, 38, .06), 0 1px 2px rgba(23, 30, 38, .04);
+  --shadow-lg: 0 12px 32px rgba(23, 30, 38, .16);   /* 弹窗 / 滑出面板（唯一一档大阴影） */
+  --ring: 0 0 0 3px var(--blue-bg);                 /* 聚焦圈（键盘可达性） */
+  --shadow-lg: 0 12px 32px rgba(23, 30, 38, .16);   /* 弹窗 / 滑出面板（唯一一档大阴影） */
+  --ring: 0 0 0 3px var(--blue-bg);                 /* 聚焦圈（键盘可达性） */
   --nav-h: 56px;
   /* v3.8.87 吸顶导航栏（.tabs）的高度。它也是 sticky，两块合起来构成吸顶区，
      供 scroll-padding-top 与行情悬浮条的落位基准使用。
@@ -49,7 +53,7 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 button { font-family: inherit; cursor: pointer; }
 input, select, textarea { font-family: inherit; font-size: 14px; color: var(--ink); }
@@ -57,9 +61,9 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 
 /* ---------- 通用按钮 ---------- */
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   border: 1px solid transparent; border-radius: var(--radius-sm);
-  padding: 9px 16px; font-size: 14px; font-weight: 500;
+  padding: 8px 16px; font-size: 14px; font-weight: 600;
   background: var(--card); color: var(--ink);
   transition: filter .15s, background .15s, border-color .15s;
   white-space: nowrap;
@@ -71,7 +75,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 .btn.ghost:hover { border-color: var(--ink-3); }
 .btn.danger { background: var(--up-bg); color: var(--up); border-color: #F2CFCA; }
 .btn.danger:hover { background: #FBE3E0; }
-.btn.sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+.btn.sm { padding: 4px 12px; font-size: 12px; border-radius: var(--radius-sm); }
 .btn.block { width: 100%; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .link-btn {
@@ -104,11 +108,11 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 }
 .auth-card {
   width: 100%; max-width: 380px;
-  background: var(--card); border-radius: 16px;
+  background: var(--card); border-radius: var(--radius-lg);
   /* 上下内距配平：标题上方 = padding-top(22) + h1 margin-top(8) = 30px，
      按钮下方 = padding-bottom(28) + 按钮自身无外边距 = 28px，
      二者视觉接近，避免「上面空得多、下面挤」的失衡感（用户反馈）。 */
-  padding: 22px 28px 28px; box-shadow: var(--shadow);
+  padding: 24px 28px 28px; box-shadow: var(--shadow);
   border: 1px solid var(--line);
 }
 .auth-logo { text-align: center; margin-bottom: 20px; }
@@ -117,23 +121,23 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 /* 矮屏内容压缩（无条件，不区分设备）：屏幕本身就矮时，卡片再往上也顶到 padding-top
    天花板了，只能压缩卡片自身高度，为「键盘占屏一半」腾出空间。 */
 @media (max-height: 680px) {
-  .auth-card { padding: 16px 24px 22px; }          /* 上下配平：16+4=20 / 22 */
+  .auth-card { padding: 16px 24px 24px; }          /* 上下配平：16+4=20 / 22 */
   .auth-logo { margin-bottom: 12px; }
   .auth-logo h1 { font-size: 18px; margin-top: 4px; }
 }
 /* 极矮屏（≤580px，小屏 + 键盘吃掉半屏）：再把卡片上下内距收到最紧。 */
 @media (max-height: 580px) {
-  .auth-card { padding: 13px 20px 18px; }          /* 上下配平：13+4=17 / 18 */
+  .auth-card { padding: 12px 20px 16px; }          /* 上下配平：13+4=17 / 18 */
   .auth-logo { margin-bottom: 8px; }
   .auth-logo .logo-ico { width: 32px; height: 32px; }
   .auth-tabs { margin-bottom: 12px; }
-  .auth-form { gap: 9px; }
+  .auth-form { gap: 8px; }
 }
 .auth-sub { color: var(--ink-3); font-size: 13px; margin-top: 2px; }
-.auth-tabs { display: flex; background: var(--bg); border-radius: 8px; padding: 3px; margin-bottom: 18px; }
+.auth-tabs { display: flex; background: var(--bg); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 16px; }
 .auth-tab {
   flex: 1; border: none; background: none; padding: 8px;
-  border-radius: 6px; font-size: 14px; color: var(--ink-2); font-weight: 500;
+  border-radius: var(--radius-sm); font-size: 14px; color: var(--ink-2); font-weight: 600;
 }
 .auth-tab.active { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
 .auth-form { display: flex; flex-direction: column; gap: 12px; }
@@ -143,7 +147,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
   padding: 0 12px; background: var(--field); outline: none;
   transition: border-color .15s, box-shadow .15s;
 }
-.auth-form input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }
+.auth-form input:focus { border-color: var(--blue); box-shadow: var(--ring); }
 .pwd-wrap { position: relative; }
 .pwd-wrap input { padding-right: 42px; }
 /* v3.8.68 隐藏 Edge/IE 原生「显示密码」小眼睛（::-ms-reveal）：输入内容时浏览器会在
@@ -157,11 +161,11 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
   background: none; border: none; padding: 8px; color: var(--ink-3); line-height: 0;
 }
 .pwd-eye svg { width: 18px; height: 18px; }
-.auth-msg { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: 13px; }
+.auth-msg { margin-top: 12px; padding: 12px 12px; border-radius: var(--radius-sm); font-size: 13px; }
 .auth-msg.err { background: var(--up-bg); color: var(--up); }
 .auth-msg.ok { background: var(--down-bg); color: var(--down); }
 .auth-foot { text-align: center; }
-.init-hint { color: var(--amber); background: var(--amber-bg); padding: 10px 12px; border-radius: 8px; font-size: 13px; }
+.init-hint { color: var(--amber); background: var(--amber-bg); padding: 12px 12px; border-radius: var(--radius-sm); font-size: 13px; }
 
 /* ---------- 顶部栏 ---------- */
 .topbar {
@@ -175,9 +179,9 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
   font-weight: 600; font-size: 16px; white-space: nowrap;
 }
 .topbar-brand .logo-ico { width: 22px; height: 22px; color: var(--blue); }
-.topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.topbar-right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
 .model-sel {
-  max-width: 220px; font-size: 12px; padding: 5px 10px;
+  max-width: 220px; font-size: 12px; padding: 4px 12px;
   border: 1px solid var(--line-strong); border-radius: 999px;
   background: var(--blue-bg); color: var(--blue); outline: none;
 }
@@ -185,7 +189,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 /* 顶栏当前模型徽章（只读展示，切换在 设置 → 模型） */
 .model-badge {
   max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 12px; padding: 5px 12px; border-radius: 999px;
+  font-size: 12px; padding: 4px 12px; border-radius: 999px;
   background: var(--blue-bg); color: var(--blue);
 }
 
@@ -229,21 +233,21 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
   .tabs { max-width: 1152px; width: calc(100% - 48px); }
 }
 .tab {
-  border: 0; background: transparent; padding: 9px 14px;
-  font-size: 14px; color: var(--ink-2); border-radius: 10px;
-  display: flex; align-items: center; gap: 6px;
+  border: 0; background: transparent; padding: 8px 16px;
+  font-size: 14px; color: var(--ink-2); border-radius: var(--radius-sm);
+  display: flex; align-items: center; gap: 8px;
 }
 .tab:hover { background: var(--bg); color: var(--ink); }
 .tab.active { background: var(--blue-bg); color: var(--blue); font-weight: 600; }
 .tab-ico { font-size: 13px; opacity: .75; }
 .mode-badge {
-  font-size: 12px; padding: 2px 8px; border-radius: 10px;
-  background: var(--down-bg); color: var(--down); font-weight: 500;
+  font-size: 12px; padding: 2px 8px; border-radius: var(--radius-sm);
+  background: var(--down-bg); color: var(--down); font-weight: 600;
 }
 .mode-badge.local { background: var(--amber-bg); color: var(--amber); }
 .role-badge {
-  font-size: 12px; padding: 2px 8px; border-radius: 10px;
-  background: var(--blue-bg); color: var(--blue); font-weight: 500;
+  font-size: 12px; padding: 2px 8px; border-radius: var(--radius-sm);
+  background: var(--blue-bg); color: var(--blue); font-weight: 600;
 }
 .user-email { color: var(--ink-2); font-size: 13px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -251,19 +255,19 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 .main { max-width: 1120px; margin: 0 auto; padding: 20px 20px calc(20px + var(--nav-h)); }
 .view { display: none; }
 .view.active { display: block; }
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
 .grid-2 + .grid-2 { margin-top: 0; }
 
 /* ---------- 卡片 ---------- */
 .card {
   background: var(--card); border: 1px solid var(--line);
-  border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow);
-  margin-bottom: 16px; min-width: 0;
+  border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+  margin-bottom: 24px; min-width: 0;
 }
 .grid-2 .card { margin-bottom: 0; }
-.card-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+.card-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
 .card-title-row {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   margin-bottom: 12px;
 }
 .card-title-row .card-title { margin-bottom: 0; }
@@ -281,13 +285,13 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 .neu { color: var(--ink); }
 
 /* ---------- 快捷输入 ---------- */
-.quick-input-row { display: flex; gap: 8px; margin: 10px 0; }
+.quick-input-row { display: flex; gap: 8px; margin: 12px 0; }
 .quick-input-row input, .quick-input-row select {
   flex: 1; min-width: 0; border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm); outline: none;
 }
 /* v3.8.52 修复：这组规则原来写成 `.quick-input-row input, .quick-input-row select
-   { padding: 9px 12px; background: var(--field) }`，带来两个问题——
+   { padding: 8px 12px; background: var(--field) }`，带来两个问题——
    ① 内距与全局 `input/select { height:32px; box-sizing:border-box }` 冲突：
       32 - 9*2 - 边框 2 = 12px 内容高，小于 13px 字号的真实行高 18.2px，
       「费用试算」的「买入 / 沪市」下拉文字被上下裁掉一半；
@@ -299,46 +303,46 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
   padding: 0 28px 0 12px;
   background: var(--field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2398A1AC' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
 }
-.quick-input-row input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }
+.quick-input-row input:focus { border-color: var(--blue); box-shadow: var(--ring); }
 .quick-hint {
-  margin: 8px 0; padding: 10px 12px; border-radius: 8px;
+  margin: 8px 0; padding: 12px 12px; border-radius: var(--radius-sm);
   background: var(--blue-bg); color: var(--blue); font-size: 13px;
 }
 .quick-hint.warn { background: var(--amber-bg); color: var(--amber); }
 .quick-hint .qh-act { display: inline-block; margin-top: 4px; }
 .p-warn { color: var(--amber); margin-bottom: 4px; }
 .p-sum { font-weight: 600; }
-.pending-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.pending-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .p-item {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  background: var(--card); border: 1px solid var(--line); border-radius: 8px;
-  padding: 8px 10px;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 8px 12px;
 }
 .p-item .p-desc { flex: 1; min-width: 160px; font-size: 13px; color: var(--ink); }
 /* v3.8.60 AI 解析结果里股票代码的显式展示与「已自动纠正」提示 */
 .p-item .p-code { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .p-item .p-fix {
-  flex-basis: 100%; font-size: 12px; line-height: 1.5; color: var(--blue);
+  flex-basis: 100%; font-size: 12px; line-height: 1.6; color: var(--blue);
 }
 .p-item .p-fix.warn { color: var(--amber); }
-.custom-model { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 2px; }
+.custom-model { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 2px; }
 
 /* ---------- 迷你列表 ---------- */
 .mini-list { display: flex; flex-direction: column; }
 .mini-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 2px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 2px; border-bottom: 1px solid var(--line);
 }
 .mini-item:last-child { border-bottom: none; }
 .mini-main { flex: 1; min-width: 0; }
-.mini-title { font-weight: 500; display: flex; align-items: center; gap: 6px; }
+.mini-title { font-weight: 600; display: flex; align-items: center; gap: 8px; }
 .mini-sub { font-size: 12px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mini-right { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mini-right .m-val { font-weight: 600; }
 .mini-right .m-sub { font-size: 12px; color: var(--ink-3); }
 .tag {
-  display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 9px;
-  background: var(--blue-bg); color: var(--blue); font-weight: 500; flex-shrink: 0;
+  display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: var(--radius-sm);
+  background: var(--blue-bg); color: var(--blue); font-weight: 600; flex-shrink: 0;
 }
 .tag.buy { background: var(--up-bg); color: var(--up); }
 .tag.sell { background: var(--down-bg); color: var(--down); }
@@ -350,35 +354,35 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 
 /* ---------- 仓位占比条 ---------- */
 .weight-bar {
-  display: flex; height: 14px; border-radius: 7px; overflow: hidden;
-  background: var(--bg); margin-bottom: 14px;
+  display: flex; height: 14px; border-radius: var(--radius-sm); overflow: hidden;
+  background: var(--bg); margin-bottom: 16px;
 }
 .weight-bar .wb-seg { min-width: 2px; transition: width .3s; }
-.weight-bar .wb-seg:first-child { border-radius: 7px 0 0 7px; }
-.weight-bar .wb-seg:last-child { border-radius: 0 7px 7px 0; }
-.weight-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
-.weight-legend .wl-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ink-2); }
-.weight-legend .wl-dot { width: 9px; height: 9px; border-radius: 3px; }
+.weight-bar .wb-seg:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.weight-bar .wb-seg:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.weight-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.weight-legend .wl-item { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink-2); }
+.weight-legend .wl-dot { width: 9px; height: 9px; border-radius: var(--radius-sm); }
 
 /* ---------- 表格 ---------- */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .tbl { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
 .tbl th {
-  text-align: left; font-weight: 500; color: var(--ink-3); font-size: 12px;
-  padding: 8px 10px; border-bottom: 1px solid var(--line);
+  text-align: left; font-weight: 600; color: var(--ink-3); font-size: 12px;
+  padding: 8px 12px; border-bottom: 1px solid var(--line);
   white-space: nowrap; background: var(--field);
 }
-.tbl td { padding: 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tbl td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .tbl tbody tr:hover { background: var(--field); }
 .tbl tbody tr:last-child td { border-bottom: none; }
 .tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
 .tbl th.num { text-align: right; }
 .stock-cell { display: flex; flex-direction: column; min-width: 90px; }
-.stock-cell .sc-name { font-weight: 500; }
+.stock-cell .sc-name { font-weight: 600; }
 .stock-cell .sc-code { font-size: 12px; color: var(--ink-3); }
-.row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.row-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .icon-btn {
-  background: none; border: 1px solid var(--line-strong); border-radius: 6px;
+  background: none; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
   padding: 4px 8px; font-size: 12px; color: var(--ink-2);
 }
 .icon-btn:hover { color: var(--blue); border-color: var(--blue); }
@@ -387,12 +391,12 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 /* ---------- 时间线（持仓详情） ---------- */
 .timeline { display: flex; flex-direction: column; }
 .tl-item {
-  display: flex; gap: 12px; padding: 10px 0;
+  display: flex; gap: 12px; padding: 12px 0;
   border-bottom: 1px dashed var(--line);
 }
 .tl-item:last-child { border-bottom: none; }
 .tl-time { color: var(--ink-3); font-size: 12px; white-space: nowrap; width: 128px; padding-top: 2px; }
-.tl-body { flex: 1; display: flex; justify-content: space-between; gap: 10px; }
+.tl-body { flex: 1; display: flex; justify-content: space-between; gap: 12px; }
 .tl-main { min-width: 0; }
 .tl-sub { font-size: 12px; color: var(--ink-3); }
 .tl-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -401,23 +405,23 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 /* ---------- 表单 ---------- */
 .form-grid {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 12px; margin-bottom: 6px;
+  gap: 12px; margin-bottom: 8px;
 }
 .form-grid label {
-  display: flex; flex-direction: column; gap: 5px;
+  display: flex; flex-direction: column; gap: 4px;
   font-size: 12px; color: var(--ink-2); min-width: 0;
 }
 .form-grid input, .form-grid select {
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
-  padding: 9px 10px; background: var(--field); outline: none; width: 100%;
+  padding: 8px 12px; background: var(--field); outline: none; width: 100%;
   transition: border-color .15s, box-shadow .15s;
 }
-.form-grid input:focus, .form-grid select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }
+.form-grid input:focus, .form-grid select:focus { border-color: var(--blue); box-shadow: var(--ring); }
 .form-grid .span2 { grid-column: span 2; }
-.form-actions { display: flex; gap: 10px; align-items: end; }
+.form-actions { display: flex; gap: 12px; align-items: end; }
 .fee-preview {
   background: var(--bg); border-radius: var(--radius-sm);
-  padding: 10px 12px; font-size: 12px; color: var(--ink-2);
+  padding: 12px 12px; font-size: 12px; color: var(--ink-2);
   display: flex; flex-wrap: wrap; gap: 4px 16px;
 }
 .fee-preview:empty { display: none; }
@@ -426,19 +430,19 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 /* ---------- 筛选 ---------- */
 .filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .filters input, .filters select {
-  border: 1px solid var(--line-strong); border-radius: 6px;
-  padding: 6px 8px; font-size: 12px; background: var(--field); outline: none;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  padding: 8px 8px; font-size: 12px; background: var(--field); outline: none;
 }
 .filters input.w120 { width: 120px; }
 .filter-sep { color: var(--ink-3); }
 /* v3.3.6 起止日期框：PC/手机均 120px，手机字号略小 */
 .filters input[type="date"] { width: 120px; }
 @media (max-width: 640px) {
-  .filters input[type="date"] { width: 120px; padding: 6px 4px; font-size: 12px; }
+  .filters input[type="date"] { width: 120px; padding: 8px 4px; font-size: 12px; }
 }
 
 /* ---------- 费率编辑 ---------- */
-.fee-editor { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+.fee-editor { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
 .fee-mkt {
   border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden;
 }
@@ -449,11 +453,11 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 }
 .fee-mkt-head .hint { font-weight: 400; font-size: 12px; }
 .fee-mkt-grid {
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; padding: 10px 12px;
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; padding: 12px 12px;
 }
-.fee-mkt-grid label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.fee-mkt-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
 .fee-mkt-grid input {
-  border: 1px solid var(--line-strong); border-radius: 6px; padding: 6px 8px;
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm); padding: 8px 8px;
   background: var(--field); outline: none; width: 100%; min-width: 0;
 }
 @media (max-width: 900px) {
@@ -465,13 +469,13 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 .fee-calc .quick-input-row input { flex: 1 1 180px; min-width: 0; }
 .fee-calc .quick-input-row .btn { flex: 0 0 auto; }
 .fee-mkt-grid input:focus { border-color: var(--blue); }
-.fee-calc { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 4px; }
+.fee-calc { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 4px; }
 .fee-calc .card-title { margin-bottom: 8px; font-size: 14px; }
 
 /* ---------- 其他 ---------- */
-.btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 12px; }
 .clear-area { margin-top: 12px; padding: 12px; border: 1px dashed #EAC9C4; border-radius: var(--radius-sm); background: #FDF8F7; }
-.about-line { color: var(--ink-2); font-size: 13px; margin-bottom: 6px; }
+.about-line { color: var(--ink-2); font-size: 13px; margin-bottom: 8px; }
 
 /* ---------- 底部导航（手机） ---------- */
 .bottom-nav {
@@ -482,7 +486,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 }
 .bnav-item {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 3px; border: none; background: none;
+  gap: 4px; border: none; background: none;
   color: var(--ink-3); font-size: 11px;
 }
 .bnav-item svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; }
@@ -525,9 +529,9 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
      不影响：JS 会立刻量算校正。 */
   position: fixed; right: 16px; top: calc(var(--nav-h) + var(--tabs-h) + 8px); z-index: 45;
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 8px; border-radius: 999px;
+  padding: 8px 8px; border-radius: 999px;
   background: var(--card); border: 1px solid var(--line);
-  box-shadow: 0 8px 24px rgba(20, 40, 80, .18);
+  box-shadow: var(--shadow-lg);
   opacity: 0; visibility: hidden; transform: translateY(-8px);
   transition: opacity .18s ease, transform .18s ease, visibility .18s;
   touch-action: none;   /* 手指在条上滑动 = 拖动，不交给页面滚动 */
@@ -537,16 +541,16 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 .quote-fab .qf-grip {
   flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
   width: 16px; height: 26px; margin-left: 2px;
-  color: var(--ink-3); border-radius: 6px; cursor: ns-resize;
+  color: var(--ink-3); border-radius: var(--radius-sm); cursor: ns-resize;
 }
 .quote-fab .qf-grip svg { width: 14px; height: 14px; fill: currentColor; stroke: none; }
 .quote-fab .qf-grip:hover { color: var(--ink-2); background: var(--line); }
-.quote-fab.dragging { box-shadow: 0 14px 34px rgba(20, 40, 80, .26); }
+.quote-fab.dragging { box-shadow: var(--shadow-lg); }
 .quote-fab.dragging .qf-grip { cursor: ns-resize; }
 @media (max-width: 720px) {
   /* 手机端顶栏是 height:auto（padding 8+8 + 控件 32 ≈ 48px），常量取 64px 作保守下界；
      真实落位同样由 JS 量算。整体再收一档减少遮挡 */
-  .quote-fab { right: 12px; top: 64px; gap: 6px; padding: 5px 7px; }
+  .quote-fab { right: 12px; top: 64px; gap: 8px; padding: 4px 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .quote-fab { transition: none; }
@@ -560,28 +564,28 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 }
 .modal {
   width: 100%; max-width: 360px;
-  background: var(--card); border-radius: 14px; padding: 20px;
-  box-shadow: 0 12px 40px rgba(23, 30, 38, .18);
+  background: var(--card); border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow-lg);
 }
 .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-.modal-desc { color: var(--ink-2); font-size: 13px; margin-bottom: 18px; word-break: break-all; }
-.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.modal-desc { color: var(--ink-2); font-size: 13px; margin-bottom: 16px; word-break: break-all; }
+.modal-actions { display: flex; gap: 12px; justify-content: flex-end; }
 /* v3.8.43 输入型弹窗的输入框（新建分组 / 重置密码等）
    高度/字号/内边距沿用 v2.8.1 全局输入框规则；边框/底色/圆角/焦点态与 .add-row input 逐项对齐 */
 .dlg-input {
-  display: block; width: 100%; margin: 0 0 18px;
+  display: block; width: 100%; margin: 0 0 16px;
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
   background: var(--field); outline: none;
   transition: border-color .15s, box-shadow .15s;
 }
-.dlg-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }
+.dlg-input:focus { border-color: var(--blue); box-shadow: var(--ring); }
 
 /* ---------- Toast ---------- */
 #toast {
   position: fixed; left: 50%; bottom: calc(72px + env(safe-area-inset-bottom));
   transform: translateX(-50%) translateY(20px);
   background: rgba(35, 42, 50, .92); color: var(--card);
-  padding: 10px 18px; border-radius: 10px; font-size: 13px;
+  padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13px;
   opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
   z-index: 200; max-width: 80vw; text-align: center;
 }
@@ -601,22 +605,22 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 /* 手机：底部五 Tab + 紧凑顶栏（当前模型 / 用户 / 退出，参考 trade-manager） */
 @media (max-width: 640px) {
   .topbar { gap: 8px; height: auto; padding: 8px 12px; }
-  .topbar-brand { font-size: 14px; gap: 6px; }
+  .topbar-brand { font-size: 14px; gap: 8px; }
   .topbar-brand .logo-ico { width: 18px; height: 18px; }
   .topbar-right { gap: 8px; min-width: 0; }
-  .model-badge { max-width: 112px; font-size: 12px; padding: 5px 9px; }
+  .model-badge { max-width: 112px; font-size: 12px; padding: 4px 8px; }
   .mode-badge { display: none; }
   .user-email { max-width: 68px; font-size: 12px; }
   /* v3.21.4 角色徽标手机上不再隐藏：管理员/普通用户是账户信息的一部分，
      手机端看不到就与 PC 不一致了。腾出的宽度从模型徽标和用户名那里挤。 */
-  .role-badge { display: inline-flex; align-items: center; font-size: 11px; padding: 2px 6px; }
-  .topbar .btn.sm { padding: 5px 10px; font-size: 12px; }
+  .role-badge { display: inline-flex; align-items: center; font-size: 11px; padding: 2px 8px; }
+  .topbar .btn.sm { padding: 4px 12px; font-size: 12px; }
   .tabs { display: none; }
   .bottom-nav { display: flex; }
   .main { padding: 12px 12px calc(16px + var(--nav-h) + env(safe-area-inset-bottom)); }
   .grid-2 { grid-template-columns: 1fr; gap: 12px; }
   .grid-2 .card { margin-bottom: 12px; }
-  .card { padding: 14px 12px; border-radius: 12px; }
+  .card { padding: 16px 12px; border-radius: var(--radius); }
   .form-grid { grid-template-columns: 1fr 1fr; }
   .form-grid .span2 { grid-column: span 2; }
   .form-actions { grid-column: span 2; }
@@ -642,7 +646,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
    现在整条页签包进一张扁卡片 —— 复用 .card 的背景/边框/圆角/阴影（与
    v3.8.88 吸顶导航 .tabs 同思路），分析和设置两页共用本规则同时生效。 */
 .set-tabs {
-  display: flex; gap: 6px; margin: 0 0 12px; padding: 8px;
+  display: flex; gap: 8px; margin: 0 0 12px; padding: 8px;
   background: var(--card); border: 1px solid var(--line);
   border-radius: var(--radius); box-shadow: var(--shadow);
   overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
@@ -650,14 +654,14 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 .set-tabs::-webkit-scrollbar { display: none; }
 .set-tab {
   flex: none; border: 1px solid transparent; background: transparent;
-  color: var(--ink-2); padding: 8px 14px; font-size: 13px; font-weight: 500;
-  border-radius: 10px; white-space: nowrap; transition: background .15s, color .15s, border-color .15s;
+  color: var(--ink-2); padding: 8px 16px; font-size: 13px; font-weight: 600;
+  border-radius: var(--radius-sm); white-space: nowrap; transition: background .15s, color .15s, border-color .15s;
 }
 .set-tab:hover { color: var(--blue); background: var(--blue-bg); }
 .set-tab.active { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); font-weight: 600; }
 @media (max-width: 720px) {
-  .set-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; overflow-x: visible; }
-  .set-tab { min-width: 0; padding: 8px 4px; font-size: 12px; border-radius: 9px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .set-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; overflow-x: visible; }
+  .set-tab { min-width: 0; padding: 8px 4px; font-size: 12px; border-radius: var(--radius-sm); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 /* ---------- 股票联想下拉 ---------- */
@@ -671,24 +675,24 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 .add-row .sug-stock { min-width: 0; }
 .add-row .sug-stock input { width: 100%; }
 .add-row input {
-  flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--line-strong);
+  flex: 1; min-width: 0; padding: 12px 12px; border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm); background: var(--field); outline: none;
   transition: border-color .15s, box-shadow .15s;
 }
-.add-row input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }
+.add-row input:focus { border-color: var(--blue); box-shadow: var(--ring); }
 .sug-box {
   position: absolute; top: 100%; left: 0; right: 0; z-index: 30; background: var(--card);
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm); margin-top: 4px;
-  box-shadow: 0 8px 24px rgba(23, 30, 38, .12); max-height: 264px; overflow-y: auto;
+  box-shadow: var(--shadow-lg); max-height: 264px; overflow-y: auto;
 }
-.sug-item { display: flex; align-items: center; gap: 8px; padding: 9px 12px; font-size: 13px; cursor: pointer; color: var(--ink); }
+.sug-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 13px; cursor: pointer; color: var(--ink); }
 .sug-item b { color: var(--blue); flex-shrink: 0; font-weight: 600; }
 .sug-item span { margin-left: auto; font-size: 12px; color: var(--ink-3); flex-shrink: 0; }
 .sug-item:hover, .sug-item.on { background: var(--blue-bg); }
-.sug-empty { padding: 10px 12px; font-size: 12px; color: var(--ink-3); }
+.sug-empty { padding: 12px 12px; font-size: 12px; color: var(--ink-3); }
 
 /* ---------- NL 示例词条 ---------- */
-.chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 4px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
 .chip {
   font-size: 12px; color: var(--blue); background: var(--blue-bg);
   border: 1px solid transparent; border-radius: 999px; padding: 4px 12px; cursor: pointer;
@@ -697,31 +701,31 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 .chip:hover { border-color: var(--blue); }
 
 /* ---------- 折叠面板 ---------- */
-.cm-details { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 12px; background: var(--field); }
-.cm-details > summary { cursor: pointer; font-size: 13px; font-weight: 500; color: var(--ink-2); user-select: none; }
-.cm-details[open] > summary { margin-bottom: 10px; }
+.cm-details { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 12px; margin-top: 12px; background: var(--field); }
+.cm-details > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink-2); user-select: none; }
+.cm-details[open] > summary { margin-bottom: 12px; }
 
 /* ---------- 平台模型费率列表 ---------- */
 .rate-block { margin-top: 4px; }
 .rate-search {
   width: 100%; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
-  padding: 9px 12px; background: var(--field); outline: none; margin: 8px 0;
+  padding: 8px 12px; background: var(--field); outline: none; margin: 8px 0;
   transition: border-color .15s, box-shadow .15s;
 }
-.rate-search:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }
+.rate-search:focus { border-color: var(--blue); box-shadow: var(--ring); }
 .rate-list {
   border: 1px solid var(--line); border-radius: var(--radius-sm);
   max-height: 300px; overflow-y: auto; background: var(--card);
 }
 .rate-item {
-  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  display: flex; align-items: center; gap: 12px; padding: 8px 12px;
   font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--line);
 }
 .rate-item:last-child { border-bottom: none; }
 .rate-item:hover { background: var(--bg); }
 .rate-item.on { background: var(--blue-bg); }
-.rate-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-.rate-id { font-style: normal; font-size: 12px; color: var(--ink-3); margin-left: 6px; }
+.rate-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.rate-id { font-style: normal; font-size: 12px; color: var(--ink-3); margin-left: 8px; }
 .rate-price { flex: none; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .rate-price.free { color: var(--down); font-weight: 600; }
 
@@ -736,34 +740,34 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 .modal-title-row .modal-title { margin-bottom: 0; }
 .modal-x {
   border: none; background: none; cursor: pointer;
-  font-size: 15px; color: var(--ink-2); padding: 4px 8px; border-radius: 6px; line-height: 1;
+  font-size: 15px; color: var(--ink-2); padding: 4px 8px; border-radius: var(--radius-sm); line-height: 1;
 }
 .modal-x:hover { background: rgba(23, 30, 38, .06); color: var(--ink); }
-.cm-section { border-top: 1px solid var(--line, #e6e9ee); margin-top: 14px; padding-top: 2px; }
+.cm-section { border-top: 1px solid var(--line, #e6e9ee); margin-top: 16px; padding-top: 2px; }
 
 /* ---------- v2.4.1 记一笔弹窗紧凑化 ---------- */
-#recModal .modal { padding: 16px 18px 18px; }
+#recModal .modal { padding: 16px 16px 16px; }
 #recModal .modal-title { font-size: 15px; }
-#recModal .modal > .hint { margin: 4px 0 10px; }
+#recModal .modal > .hint { margin: 4px 0 12px; }
 #recModal .quick-input-row { gap: 8px; }
 #recModal .chips { margin: 8px 0 2px; }
-#recModal .chip { font-size: 12px; padding: 4px 10px; }
-#recModal .form-grid { gap: 8px 10px; margin-top: 10px; }
-#recModal .form-grid input, #recModal .form-grid select { padding: 8px 9px; }
+#recModal .chip { font-size: 12px; padding: 4px 12px; }
+#recModal .form-grid { gap: 8px 12px; margin-top: 12px; }
+#recModal .form-grid input, #recModal .form-grid select { padding: 8px 8px; }
 #recModal .form-grid .fee-preview.span2,
 #recModal .fee-preview.span2 { grid-column: span 4; }
-#recModal .fee-preview { justify-content: flex-end; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; }
+#recModal .fee-preview { justify-content: flex-end; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; }
 #recModal .form-actions { grid-column: span 4; justify-content: flex-end; margin-top: 2px; }
 
 /* ---------- v2.5.0 未获取/获取失败标签 ---------- */
 .na-tag {
   display: inline-block; font-size: 11px; line-height: 1;
-  padding: 3px 7px; border-radius: 999px;
+  padding: 4px 8px; border-radius: 999px;
   background: rgba(23, 30, 38, .06); color: var(--ink-2);
 }
 
 /* ---------- v2.6.0 交易记录时间两行 / 操作按钮单行 ---------- */
-.tm-cell { white-space: nowrap; line-height: 1.35; }
+.tm-cell { white-space: nowrap; line-height: 1.4; }
 .tm-cell .tm-sub { color: var(--ink-2); font-size: 12px; }
 .row-actions { flex-wrap: nowrap; white-space: nowrap; }
 .row-actions .icon-btn { white-space: nowrap; }
@@ -771,7 +775,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 
 /* ---------- v2.6.3 记一笔弹窗布局修正 ---------- */
 /* 解析确认行：按钮可换行不挤压 */
-.pending-list .p-item { flex-wrap: wrap; row-gap: 6px; }
+.pending-list .p-item { flex-wrap: wrap; row-gap: 8px; }
 /* ---------- v3.0.9 记一笔手动表单 PC 分行 ---------- */
 /* 大屏：买/卖+股票一行；价格+数量+时间一行；备注独占一行 */
 @media (min-width: 641px) {
@@ -783,10 +787,10 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 
 /* 手机端：弹窗近全屏、表单两列，span 对齐两列栅格 */
 @media (max-width: 640px) {
-  #recModal { padding: 10px; align-items: flex-end; }
+  #recModal { padding: 12px; align-items: flex-end; }
   #recModal .modal-lg {
     max-width: none; width: 100%; max-height: 92vh;
-    border-radius: 16px 16px 0 0; padding: 14px 14px 18px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 16px 16px 16px;
   }
   #recModal .form-grid { grid-template-columns: 1fr 1fr; }
   #recModal .fee-preview.span2,
@@ -805,7 +809,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
    手机端直接复用 PC 行的 9 个字段，由 .tbl-stack 重排成卡片，信息零损失。 */
 /* ---------- v3.2.1 交易记录检索增强 ---------- */
 .filter-stats {
-  display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 6px 2px 0;
+  display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 8px 2px 0;
   font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums;
 }
 .filter-stats b { color: var(--ink); font-weight: 600; }
@@ -816,12 +820,12 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 /* ---------- v3.3.3 交易筛选区独立成块，全部左对齐 ---------- */
 /* ---------- v3.3.4 筛选/工具行统一行距（全站生效）：行与行之间一律 10px ---------- */
 .filter-stats {
-  padding: 0 2px; margin: 10px 0;
+  padding: 0 2px; margin: 12px 0;
 }
-#view-trades .filters-col { margin-top: 2px; gap: 10px; }
+#view-trades .filters-col { margin-top: 2px; gap: 12px; }
 #view-trades .filters { justify-content: flex-start; }
-#view-trades .card-title-row { margin-bottom: 10px; }
-#view-trades .wtabs { margin-top: 0; margin-bottom: 10px; }
+#view-trades .card-title-row { margin-bottom: 12px; }
+#view-trades .wtabs { margin-top: 0; margin-bottom: 12px; }
 #view-trades .ft-kw { max-width: 560px; }
 .kw-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .kw-row .ft-kw { flex: 1; min-width: 0; }
@@ -831,26 +835,26 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 }
 /* 其他页面同类工具行（自选分组 Tab、卡内标题行）保持同一节奏 */
 #view-watch .wtabs { margin-top: 0; }
-#view-holdings .card-title-row, #view-watch .card-title-row { margin-bottom: 10px; }
+#view-holdings .card-title-row, #view-watch .card-title-row { margin-bottom: 12px; }
 
 /* ---------- v3.3.2 快捷时间 chips（沿用） ---------- */
 .filters-col { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
 .ft-kw {
   width: 100%; height: 34px; padding: 0 12px; box-sizing: border-box;
-  border: 1px solid var(--line); border-radius: 8px; font-size: 13px; background: var(--card);
+  border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 13px; background: var(--card);
 }
 .ft-kw:focus { outline: none; border-color: var(--blue); }
 .f-label { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
-.f-chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.f-chips { display: inline-flex; gap: 8px; flex-wrap: wrap; }
 /* v3.9.4 时间 chips 与自选分组 Tab（.wtab）统一观感：
-   旧选中态是「实心蓝底 + 白字」，且 28px 高 / 12.5px 字号，比 .wtab 小一号 ——
+   旧选中态是「实心蓝底 + 白字」，且 28px 高 / 12px 字号，比 .wtab 小一号 ——
    查询页同一屏里「默认/按股票」（.wtab，浅蓝底蓝字选中）与时间 chips 两种
    选中样式并存，观感割裂。fchip 仅用于此处时间筛选，直接对齐 .wtab：
    同 padding（6px 12px）、同字号（13px）、选中同「浅蓝底 + 蓝字 + 加粗」。 */
 .fchip {
   display: inline-flex; align-items: center;
   border: 1px solid var(--line); background: var(--card); color: var(--ink-2);
-  padding: 6px 12px; border-radius: 999px; font-size: 13px; cursor: pointer;
+  padding: 8px 12px; border-radius: 999px; font-size: 13px; cursor: pointer;
   transition: background .15s, color .15s, border-color .15s;
 }
 .fchip:hover { border-color: var(--blue); color: var(--blue); }
@@ -865,7 +869,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 /* ---------- v3.4.5 按股票视图展开明细 ---------- */
 tr.stockagg { cursor: pointer; }
 tr.stockagg:hover td { background: var(--bg); }
-.stock-detail-row > td { background: var(--field); padding: 10px 14px; }
+.stock-detail-row > td { background: var(--field); padding: 12px 16px; }
 .stock-detail-row .sd-title { font-size: 12px; color: var(--ink-2); margin-bottom: 8px; }
 /* v3.8.51 「按股票」展开区的统计改总览同款胶囊：视觉全部继承 .idx-bar-lg
    （13px / 8px 14px 内距 / 10px 圆角 / 红涨绿跌），此处只补两件事：
@@ -874,12 +878,12 @@ tr.stockagg:hover td { background: var(--bg); }
       自然宽度排布，装不下就整枚换行，永远不会溢出。
    ② 副文用中性灰，不跟着涨跌着色，避免和主值抢读。 */
 .stock-detail-row .sd-chips { margin-bottom: 12px; }
-.stock-detail-row .idx-chip .i-sub { font-size: 13px; font-weight: 500; color: var(--ink-3, #98A1AC); font-variant-numeric: tabular-nums; }
+.stock-detail-row .idx-chip .i-sub { font-size: 13px; font-weight: 600; color: var(--ink-3, #98A1AC); font-variant-numeric: tabular-nums; }
 /* v3.8.56 明细表 8 列（新增「当笔盈亏」）：外层横向滚动兜底窄屏 */
 .sd-tbl-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .stock-detail-row .sd-tbl { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 12px; background: var(--card); table-layout: fixed; }
-.stock-detail-row .sd-tbl th, .stock-detail-row .sd-tbl td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; overflow: hidden; text-overflow: ellipsis; }
-.stock-detail-row .sd-tbl th { font-size: 12px; color: var(--ink-3); font-weight: 500; white-space: nowrap; }
+.stock-detail-row .sd-tbl th, .stock-detail-row .sd-tbl td { padding: 4px 8px; border-bottom: 1px solid var(--line); text-align: left; overflow: hidden; text-overflow: ellipsis; }
+.stock-detail-row .sd-tbl th { font-size: 12px; color: var(--ink-3); font-weight: 600; white-space: nowrap; }
 .stock-detail-row .sd-tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
 /* v3.8.56 列宽：时间/方向/价格/数量/费用 按需收紧，成交金额与两个盈亏列多分一点 */
 .stock-detail-row .sd-tbl th:nth-child(1), .stock-detail-row .sd-tbl td:nth-child(1) { width: 15%; }
@@ -892,17 +896,17 @@ tr.stockagg:hover td { background: var(--bg); }
 
 /* ---------- v3.3.10 编辑交易仅可改备注：锁定字段置灰 ---------- */
 .lock-dim { opacity: .55; pointer-events: none; background: var(--bg); }
-#tfEditHint { margin-bottom: 6px; }
+#tfEditHint { margin-bottom: 8px; }
 
 /* ---------- v2.6.4 解析确认行按钮成对并排 ---------- */
-.p-btns { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+.p-btns { display: flex; gap: 8px; margin-left: auto; flex-shrink: 0; }
 
 /* ---------- v2.7.0 自选分组 Tab ---------- */
-.wtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.wtabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .wtab {
-  display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center; gap: 4px;
   border: 1px solid var(--line); background: var(--card); cursor: pointer;
-  color: var(--ink-2); padding: 6px 12px; font-size: 13px; border-radius: 999px;
+  color: var(--ink-2); padding: 8px 12px; font-size: 13px; border-radius: 999px;
   transition: background .15s, color .15s, border-color .15s;
 }
 .wtab:hover { color: var(--blue); border-color: var(--blue); }
@@ -910,7 +914,7 @@ tr.stockagg:hover td { background: var(--bg); }
 .wtab i {
   font-style: normal; font-size: 11px; line-height: 1;
   background: rgba(23, 30, 38, .06); color: var(--ink-2);
-  padding: 3px 6px; border-radius: 999px;
+  padding: 4px 8px; border-radius: 999px;
 }
 .wtab.on i { background: var(--card); color: var(--blue); }
 /* v3.8.83 分组 Tab 的「组内涨跌幅平均值」胶囊：
@@ -919,7 +923,7 @@ tr.stockagg:hover td { background: var(--bg); }
    需要显式声明才能保证涨跌色不被 .wtab.on 的蓝色盖掉。 */
 .wtab-chg {
   font-style: normal; font-size: 11px; line-height: 1;
-  padding: 3px 6px; border-radius: 999px;
+  padding: 4px 8px; border-radius: 999px;
   background: rgba(23, 30, 38, .06);
   font-variant-numeric: tabular-nums;
 }
@@ -933,7 +937,7 @@ tr.stockagg:hover td { background: var(--bg); }
    hover 语义：新建 → 蓝（建设性），删除 → 红（破坏性）。 */
 .wtab-act {
   border-color: transparent; background: transparent;
-  padding: 6px 8px; color: var(--ink-2, #66707C);
+  padding: 8px 8px; color: var(--ink-2, #66707C);
 }
 .wtab-act svg { width: 16px; height: 16px; display: block; }
 .wtab-add { margin-left: 4px; }
@@ -955,12 +959,11 @@ tr.stockagg:hover td { background: var(--bg); }
 @media (max-width: 640px) {
   .tbl .stock-cell { max-width: 96px; }
   .tbl .sc-name { font-size: 12px; }
-  .tbl .sc-code { font-size: 11px; }
-  .tbl th, .tbl td { padding: 8px 6px; }
+  .tbl th, .tbl td { padding: 8px 8px; }
   /* v3.8.17 手机端持仓：名称/代码/市值三行 */
   #holdTableM .stock-cell, #tvHoldTableM .stock-cell { max-width: 120px; }
   #holdTableM .sc-name, #tvHoldTableM .sc-name { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #holdTableM .sc-mv, #tvHoldTableM .sc-mv { font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink-2, #444); }
+  #holdTableM .sc-mv, #tvHoldTableM .sc-mv { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink-2, #444); }
 }
 
 /* ---------- v2.7.4 添加/编辑自选合一 · v3.8.35 列宽比例 + 操作按钮靠右 ----------
@@ -984,7 +987,7 @@ tr.stockagg:hover td { background: var(--bg); }
 /* v3.8.78 加自选改为弹窗：原来「默认收起 / 点按钮展开」的 .watch-form 规则全部作废
    （表单已挪进 #watchModal，不再靠 display 切换显隐，改由弹窗的 hidden 控制）。
    只保留弹窗内的排版微调。 */
-#watchModal .modal { padding: 16px 18px 18px; }
+#watchModal .modal { padding: 16px 16px 16px; }
 #watchModal .modal-title-row { margin-bottom: 12px; }
 /* v3.8.80 弹窗按钮与输入框等高（36px）—— .btn.sm 全局 32px，和 36px 输入框并排差一截 */
 #watchModal .modal-actions .btn { min-width: 84px; height: 36px; }
@@ -1007,7 +1010,7 @@ tr.stockagg:hover td { background: var(--bg); }
   box-sizing: border-box; border-radius: var(--radius-sm);
 }
 /* 弹窗里的添加行：≤720 竖排（股票框整行，备注、分组各占一行，全部撑满） */
-#watchModal .add-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 0; }
+#watchModal .add-row { display: flex; flex-direction: column; gap: 12px; margin-bottom: 0; }
 #watchModal .add-row .sug-stock { position: relative; min-width: 0; width: 100%; }
 @media (max-width: 720px) {
   /* v3.8.86 手机端分组框没铺满的根因：.wg-pick 包裹层自身没定宽，
@@ -1048,12 +1051,12 @@ tr.stockagg:hover td { background: var(--bg); }
 .wg-list {
   position: absolute; top: calc(100% + 4px); left: 0; width: 100%; z-index: 40;
   background: var(--card); border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
-  box-shadow: 0 8px 24px rgba(23, 30, 38, .12); max-height: 200px; overflow-y: auto;
+  box-shadow: var(--shadow-lg); max-height: 200px; overflow-y: auto;
 }
-.wg-item { padding: 9px 12px; font-size: 13px; color: var(--ink); cursor: pointer; }
+.wg-item { padding: 8px 12px; font-size: 13px; color: var(--ink); cursor: pointer; }
 .wg-item:hover { background: var(--blue-bg); }
 .wg-item.on { color: var(--blue); font-weight: 600; }
-.wg-empty { padding: 10px 12px; font-size: 12px; color: var(--ink-3); }
+.wg-empty { padding: 12px 12px; font-size: 12px; color: var(--ink-3); }
 /* v3.8.84 键盘弹起时（<html> 挂 .kb-on，见 app.js sync）收窄弹窗内两类下拉：
    手机键盘已占半屏，200px 的下拉整条压进键盘底下看不见，限到 120px 保证可见。 */
 @media (max-width: 640px) {
@@ -1072,7 +1075,7 @@ tr.stockagg:hover td { background: var(--bg); }
   height: 32px; padding: 0 12px; font-size: 13px; line-height: 1.4;
   box-sizing: border-box;
 }
-#watchForm .add-row .btn.sm, #tvWatchForm .add-row .btn.sm { height: 32px; padding: 0 14px; font-size: 13px; box-sizing: border-box; }
+#watchForm .add-row .btn.sm, #tvWatchForm .add-row .btn.sm { height: 32px; padding: 0 16px; font-size: 13px; box-sizing: border-box; }
 
 /* ---------- v3.8.81/82 加自选弹窗手机端位置 + 键盘适配 ----------
    v3.8.81 上移 20px（内距上 10 下 50），v3.8.82 再上移 20px（累计 40px）→ 上 10 下 90。
@@ -1080,9 +1083,9 @@ tr.stockagg:hover td { background: var(--bg); }
    不用 transform 位移：键盘弹起时 fitWatchModal 会改 max-height，位移与高度耦合易抖。
    .modal-lg 的 max-height 预留同步提到 100px（上 10 + 下 90），避免溢出视口。 */
 @media (max-width: 640px) {
-  #watchModal { padding: 10px 10px 90px; align-items: center; }
+  #watchModal { padding: 12px 12px 90px; align-items: center; }
   #watchModal .modal-lg {
-    width: 100%; max-width: none; border-radius: 16px; padding: 14px 14px 16px;
+    width: 100%; max-width: none; border-radius: var(--radius-lg); padding: 16px 16px 16px;
     /* --kb 由 JS 在键盘弹起时写入（默认 0px）；不支持 dvh 的浏览器退回 vh */
     max-height: calc(100vh - 100px - var(--kb, 0px));
     max-height: calc(100dvh - 100px - var(--kb, 0px));
@@ -1094,33 +1097,33 @@ tr.stockagg:hover td { background: var(--bg); }
 input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
 select, textarea {
   height: 32px; font-size: 13px; line-height: 1.4;
-  padding: 0 10px; box-sizing: border-box;
+  padding: 0 12px; box-sizing: border-box;
 }
-textarea { height: auto; min-height: 32px; padding: 8px 10px; resize: vertical; }
-select { padding-right: 6px; background: var(--card); color: var(--ink); }
-.btn { height: 32px; padding: 0 14px; font-size: 13px; box-sizing: border-box; }
+textarea { height: auto; min-height: 32px; padding: 8px 12px; resize: vertical; }
+select { padding-right: 8px; background: var(--card); color: var(--ink); }
+.btn { height: 32px; padding: 0 16px; font-size: 13px; box-sizing: border-box; }
 /* v3.8.15 登录三控件强制同高同字（ID 优先级，防全局 input 规则再覆盖） */
 #loginForm input, #initForm input, #forcePwdForm input {
   height: 40px !important; font-size: 13px !important; padding: 0 12px; box-sizing: border-box;
 }
-.btn.sm { padding: 0 10px; }
+.btn.sm { padding: 0 12px; }
 
 /* ---------- v2.8.2 修复表单内 select/input 32px 高度下文字被裁 ---------- */
-.form-grid input, .form-grid select { padding: 0 10px; }
-#recModal .form-grid input, #recModal .form-grid select { padding: 0 9px; }
+.form-grid input, .form-grid select { padding: 0 12px; }
+#recModal .form-grid input, #recModal .form-grid select { padding: 0 8px; }
 
 /* ---------- v2.8.3 记一笔：全部保存按钮 ---------- */
-.p-saveall-row { display: flex; justify-content: flex-end; margin: 4px 0 6px; }
+.p-saveall-row { display: flex; justify-content: flex-end; margin: 4px 0 8px; }
 
 /* ---------- v2.8.4 记一笔：手动录入收起 + 方向Tab ---------- */
-#tfTypeTabs { gap: 6px; }
-#tfTypeTabs .wtab { flex: 0 0 auto; padding: 4px 14px; }
+#tfTypeTabs { gap: 8px; }
+#tfTypeTabs .wtab { flex: 0 0 auto; padding: 4px 16px; }
 
 /* ---------- v2.8.5 记一笔弹窗内容可滚动(手动录入展开后被裁) ---------- */
 #recModal .modal-lg { overflow-y: auto; max-height: 94vh; -webkit-overflow-scrolling: touch; }
 @media (max-width: 640px) {
   #recModal { align-items: flex-start; padding-top: 8vh; }
-  #recModal .modal-lg { max-height: 88vh; border-radius: 16px; }
+  #recModal .modal-lg { max-height: 88vh; border-radius: var(--radius-lg); }
 }
 
 /* ---------- v2.8.6 记一笔：手机端股票框独占一行 ---------- */
@@ -1140,9 +1143,9 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 .quick-input-row.nl-row { align-items: flex-start; }
 .quick-input-row.nl-row textarea {
   flex: 1; min-width: 0; min-height: 72px; height: auto;
-  resize: vertical; line-height: 1.5; padding: 8px 10px;
+  resize: vertical; line-height: 1.6; padding: 8px 12px;
 }
-.quick-input-row.nl-row .btn { flex-shrink: 0; height: auto; min-height: 32px; padding: 8px 14px; }
+.quick-input-row.nl-row .btn { flex-shrink: 0; height: auto; min-height: 32px; padding: 8px 16px; }
 .p-saveall-row { gap: 8px; }
 
 /* ---------- v2.9.9 候选下拉打开期间的透明防护罩 ---------- */
@@ -1215,45 +1218,45 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 /* ============================================================
    v3.7.0 分析中心 · 个股诊断（完整迁移自 trade-manager）
    ============================================================ */
-.diag-form-row { display: flex; gap: 10px; margin-top: 10px; }
+.diag-form-row { display: flex; gap: 12px; margin-top: 12px; }
 .diag-form-row select { flex: 1; min-width: 0; }
 .diag-form-row .btn { white-space: nowrap; }
 
 /* ---------- v3.8.6 自绘下拉（个股诊断）：不依赖浏览器原生弹层，深色系统下也正常 ---------- */
 .selpick { position: relative; flex: 1; min-width: 0; }
 .selpick-btn {
-  width: 100%; height: 32px; padding: 0 10px; box-sizing: border-box;
+  width: 100%; height: 32px; padding: 0 12px; box-sizing: border-box;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
   background: var(--card); color: var(--ink); font-size: 13px; text-align: left;
 }
 .selpick-btn:hover { border-color: var(--blue); }
-.selpick.open .selpick-btn { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }
+.selpick.open .selpick-btn { border-color: var(--blue); box-shadow: var(--ring); }
 .selpick-btn .sp-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .selpick-btn .sp-arrow { flex-shrink: 0; color: var(--ink-3); font-size: 11px; }
 .selpick-list {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40;
   background: var(--card); border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
-  box-shadow: 0 8px 24px rgba(23, 30, 38, .12); max-height: 264px; overflow-y: auto;
+  box-shadow: var(--shadow-lg); max-height: 264px; overflow-y: auto;
 }
-.selpick-item { padding: 8px 10px; font-size: 13px; color: var(--ink); cursor: pointer; }
+.selpick-item { padding: 8px 12px; font-size: 13px; color: var(--ink); cursor: pointer; }
 .selpick-item:hover { background: var(--blue-bg); }
 .selpick-item.on { color: var(--blue); font-weight: 600; }
-.selpick-empty { padding: 10px; font-size: 12px; color: var(--ink-3); text-align: center; }
-.diag-hist-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; }
+.selpick-empty { padding: 12px; font-size: 12px; color: var(--ink-3); text-align: center; }
+.diag-hist-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
 .diag-hist-item b { font-size: 13px; }
 .diag-hist-item .hint { display: block; font-size: 12px; }
 .diag-hist-item .pct { font-size: 13px; font-weight: 600; white-space: nowrap; }
-.tech-signal { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 12px; padding: 14px; border-radius: 12px; border: 1px solid var(--line); }
-.sig-badge { font-size: 20px; font-weight: 800; padding: 8px 22px; border-radius: 10px; letter-spacing: 2px; }
+.tech-signal { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 12px; padding: 16px; border-radius: var(--radius); border: 1px solid var(--line); }
+.sig-badge { font-size: 20px; font-weight: 700; padding: 8px 24px; border-radius: var(--radius-sm); letter-spacing: 2px; }
 .sig-buy  { background: var(--up-bg); color: var(--up); border: 1px solid #F3C4BE; }
 .sig-sell { background: var(--down-bg); color: var(--down); border: 1px solid #B5DEC9; }
 .sig-hold { background: var(--amber-bg); color: var(--amber); border: 1px solid #EBD9B0; }
-.sig-score { font-size: 13px; color: var(--ink-2); line-height: 1.7; min-width: 0; }
+.sig-score { font-size: 13px; color: var(--ink-2); line-height: 1.75; min-width: 0; }
 .sig-score b { font-size: 15px; }
-.tech-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
-.tech-chart-block { border: 1px solid var(--line); border-radius: 10px; padding: 12px; min-width: 0; }
-.tech-chart-block h4 { margin: 0 0 8px; font-size: 13px; color: var(--ink-2); font-weight: 600; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.tech-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.tech-chart-block { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px; min-width: 0; }
+.tech-chart-block h4 { margin: 0 0 8px; font-size: 13px; color: var(--ink-2); font-weight: 600; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .kc-hint { font-size: 12px; font-weight: 400; color: var(--ink-3); }
 .kchart-wrap { position: relative; }
 .tech-chart-block canvas { width: 100%; height: 360px; display: block; cursor: crosshair; touch-action: pan-y; }
@@ -1263,37 +1266,37 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
   .tech-charts { grid-template-columns: 1fr; }
   .tech-chart-block canvas { height: 260px; }
 }
-.kchart-tip { position: absolute; pointer-events: none; width: 242px; box-sizing: border-box; background: rgba(255,255,255,.97); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 20px rgba(20,40,80,.14); padding: 8px 10px; font-size: 12px; color: var(--ink); z-index: 5; }
+.kchart-tip { position: absolute; pointer-events: none; width: 242px; box-sizing: border-box; background: rgba(255,255,255,.97); border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: 0 6px 20px rgba(20,40,80,.14); padding: 8px 12px; font-size: 12px; color: var(--ink); z-index: 5; }
 .kchart-tip[hidden] { display: none; }
-.kt-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 600; margin-bottom: 6px; padding-bottom: 5px; border-bottom: 1px solid var(--line); }
+.kt-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 600; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
 .kt-chg { font-weight: 700; }
 .kt-chg.up { color: var(--up); }
 .kt-chg.down { color: var(--down); }
-.kt-grid { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 3px 8px; }
+.kt-grid { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 4px 8px; }
 .kt-grid span, .kt-ma span { color: var(--ink-3); white-space: nowrap; }
 .kt-grid b { text-align: right; font-weight: 600; white-space: nowrap; }
 .kt-grid b.up { color: var(--up); }
 .kt-grid b.down { color: var(--down); }
-.kt-ma { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 3px 8px; margin-top: 5px; padding-top: 5px; border-top: 1px dashed var(--line); }
+.kt-ma { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 4px 8px; margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--line); }
 .kt-ma b { text-align: right; font-weight: 600; white-space: nowrap; }
-.levels-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+.levels-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin-top: 8px; }
 .levels-legend b { color: var(--ink); }
-.formula-note { font-size: 12px; color: var(--ink-3); line-height: 1.6; margin-top: 8px; padding: 8px 10px; background: rgba(23,30,38,.03); border-radius: 6px; }
-.dw-status { font-size: 12px; color: var(--amber); font-weight: 500; }
-.calc-chain { font-size: 12px; color: var(--ink-3); margin: 4px 0 6px; padding: 6px 8px; background: rgba(23,30,38,.03); border-radius: 6px; line-height: 1.6; }
+.formula-note { font-size: 12px; color: var(--ink-3); line-height: 1.6; margin-top: 8px; padding: 8px 12px; background: rgba(23,30,38,.03); border-radius: var(--radius-sm); }
+.dw-status { font-size: 12px; color: var(--amber); font-weight: 600; }
+.calc-chain { font-size: 12px; color: var(--ink-3); margin: 4px 0 8px; padding: 8px 8px; background: rgba(23,30,38,.03); border-radius: var(--radius-sm); line-height: 1.6; }
 .lv-note { font-size: 12px; color: var(--ink-3); }
-.tech-cols { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 14px; }
+.tech-cols { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 16px; }
 @media (min-width: 900px) { .tech-cols { grid-template-columns: 1fr 1fr; } }
-.tech-reason { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.tech-reason { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 16px; min-width: 0; }
 .tech-reason h4 { margin: 0 0 8px; font-size: 13px; }
 .tech-reason ul { margin: 0; padding: 0 0 0 4px; list-style: none; }
-.tech-reason li { font-size: 13px; line-height: 1.9; color: var(--ink); }
+.tech-reason li { font-size: 13px; line-height: 1.75; color: var(--ink); }
 .r-bull { color: var(--up); } .r-bear { color: var(--down); } .r-neu { color: var(--ink-2); }
-.diag-ai { margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.diag-ai { margin-top: 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; }
 .diag-ai-title { font-size: 13px; font-weight: 600; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .diag-ai-sub { font-size: 12px; font-weight: 400; color: var(--ink-2); }
-.diag-ai-out { margin-top: 10px; white-space: pre-wrap; font-size: 13px; line-height: 1.85; color: var(--ink); min-height: 44px; }
-.diag-ai-actions { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+.diag-ai-out { margin-top: 12px; white-space: pre-wrap; font-size: 13px; line-height: 1.75; color: var(--ink); min-height: 44px; }
+.diag-ai-actions { margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap; }
 .diag-ai-idle { color: var(--ink-2); }
 .diag-folded { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .diag-folded-txt { font-size: 13px; color: var(--ink-2); }
@@ -1304,18 +1307,18 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
    v3.8.0 分析中心扩展：热度/画像/风险/复盘/回测（迁移自 trade-manager）
    ============================================================ */
 /* 通用补充 */
-.empty-tip { padding: 18px 6px; text-align: center; color: var(--ink-3); font-size: 13px; }
-.form-tip { font-size: 12px; line-height: 1.85; color: var(--ink-2); margin: 6px 0 10px; }
+.empty-tip { padding: 16px 8px; text-align: center; color: var(--ink-3); font-size: 13px; }
+.form-tip { font-size: 12px; line-height: 1.75; color: var(--ink-2); margin: 8px 0 12px; }
 .form-tip b { color: var(--ink); }
-.card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .card-head h3 { font-size: 15px; }
 .head-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .table-wrap, .tbl-wrap { overflow-x: auto; }
 .an-tabs { margin-bottom: 12px; }
-.bt-thr-wrap { display: inline-flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.bt-thr-wrap { display: inline-flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .bt-thr { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink-2); }
-.bt-thr input { width: 64px; padding: 4px 6px; }
-.bt-risk-row { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+.bt-thr input { width: 64px; padding: 4px 8px; }
+.bt-risk-row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 8px 0; }
 #btStock, #btStrat, #btPeriod, #btBasketKey { max-width: 240px; }
 .batch-at { margin-left: auto; font-size: 12px; }
 
@@ -1325,7 +1328,7 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 
 .batch-err { color: var(--amber); font-size: 12px; }
 
-.batch-head { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: 12px 0 6px; font-size: 13px; color: var(--muted); }
+.batch-head { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin: 12px 0 8px; font-size: 13px; color: var(--muted); }
 
 .batch-head b { color: var(--text); font-size: 14px; }
 
@@ -1333,7 +1336,7 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 
 .batch-head .flat { color: var(--amber); }
 
-.batch-held { display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 4px; background: var(--accent-light, #eef2ff); color: var(--accent); font-size: 11px; vertical-align: 1px; }
+.batch-held { display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: var(--radius-sm); background: var(--accent-light, #eef2ff); color: var(--accent); font-size: 11px; vertical-align: 1px; }
 
 .batch-table { min-width: 660px; }
 
@@ -1343,14 +1346,14 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 
 .batch-table th.bsort.active { color: var(--accent); }
 
-.batch-table td small { color: var(--muted); font-size: 11px; }
+.batch-table td small { color: var(--muted); font-size: 12px; }
 
 .batch-table td .flat { color: var(--amber); }
 
 /* v3.8.74 动量筛选：进度条 / 汇总行 / 逐日涨幅小胶囊 / 估算提示 */
-.mom-prog { height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; margin: 4px 0 6px; }
+.mom-prog { height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; margin: 4px 0 8px; }
 .mom-prog-bar { height: 100%; background: var(--accent); border-radius: 999px; transition: width .25s; }
-.mom-sum { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0 8px; font-size: 13px; color: var(--muted); }
+.mom-sum { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 12px 0 8px; font-size: 13px; color: var(--muted); }
 .mom-sum b { color: var(--text); font-size: 14px; }
 /* 「名次含估算」角标：用暖黄提醒这是折算值，不是精确全市场排名 */
 .mom-warn { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
@@ -1359,13 +1362,13 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 .mom-table td.num, .mom-table th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mom-i { color: var(--ink-3); font-variant-numeric: tabular-nums; }
 /* 逐日涨幅胶囊：主数值是当日涨幅，右上角小字 i 是该日全市场名次 */
-.mom-d { display: inline-flex; align-items: baseline; gap: 3px; margin-right: 6px; padding: 1px 6px;
-  border-radius: 6px; background: var(--accent-light, #eef2ff); font-variant-numeric: tabular-nums; }
-.mom-d i { font-style: normal; font-size: 11px; color: var(--ink-3); }
+.mom-d { display: inline-flex; align-items: baseline; gap: 4px; margin-right: 8px; padding: 1px 8px;
+  border-radius: var(--radius-sm); background: var(--accent-light, #eef2ff); font-variant-numeric: tabular-nums; }
+.mom-d i { font-style: normal; font-size: 12px; color: var(--ink-3); }
 .mom-d.exact { background: var(--up-bg); }            /* 当日真实名次：淡红底，和估算值区分开 */
-.mom-table th i { font-style: normal; font-weight: 400; font-size: 11px; color: var(--muted); margin-left: 3px; }
+.mom-table th i { font-style: normal; font-weight: 400; font-size: 12px; color: var(--muted); margin-left: 4px; }
 
-.bd-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.bd-badge { display: inline-block; padding: 2px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 
 .bd-badge.up { background: var(--up-bg); color: var(--up); border: 1px solid #f3b8b8; }
 
@@ -1375,13 +1378,13 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 
   #sec-bt .bt-eq-block { padding: 8px; }
 
-.bt-eq-block { border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-top: 14px; }
+.bt-eq-block { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-top: 16px; }
 
-.bt-eq-block h4 { margin: 0 0 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.bt-eq-block h4 { margin: 0 0 8px; font-size: 13px; color: var(--muted); font-weight: 600; }
 
 .bt-eq-block canvas { width: 100%; height: 240px; display: block; }
 
-.bt-trig { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.7; }
+.bt-trig { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.75; }
 
 .bt-trig b { color: var(--text); }
 
@@ -1413,17 +1416,17 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 
   #sec-bt .head-right .btn { width: 100%; }
 
-.hh-bar { display: flex; height: 22px; border-radius: 5px; overflow: hidden; }
+.hh-bar { display: flex; height: 22px; border-radius: var(--radius-sm); overflow: hidden; }
 
-.hh-card { background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+.hh-card { background: var(--bg); border-radius: var(--radius-sm); padding: 12px 12px; }
 
-.hh-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.hh-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 12px; margin-bottom: 16px; }
 
-.hh-caret { color: var(--muted); font-size: 11px; margin-right: 5px; }
+.hh-caret { color: var(--muted); font-size: 11px; margin-right: 4px; }
 
-.hh-chip { display: inline-block; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px; font-size: 12px; margin: 2px 6px 2px 0; }
+.hh-chip { display: inline-block; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; font-size: 12px; margin: 2px 8px 2px 0; }
 
-.hh-cnt { color: var(--muted); font-size: 12px; margin-left: 6px; }
+.hh-cnt { color: var(--muted); font-size: 12px; margin-left: 8px; }
 
 .hh-stock-head .hh-cnt { margin-left: 0; }
 
@@ -1431,15 +1434,15 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 
 .hh-down { color: var(--down); }
 
-.hh-foot { margin-top: 14px; font-size: 12px; color: var(--muted); line-height: 1.7; white-space: normal; }
+.hh-foot { margin-top: 16px; font-size: 12px; color: var(--muted); line-height: 1.75; white-space: normal; }
 
 /* v3.9.10 上涨/下跌卡片里的北交所小字（主数字是沪深口径，方便和同花顺对） */
 .hh-bse { margin-left: 8px; font-size: 11px; font-weight: 400; color: var(--muted); }
-.hh-bse .hh-up, .hh-bse .hh-down { font-weight: 500; }
+.hh-bse .hh-up, .hh-bse .hh-down { font-weight: 600; }
 
-.hh-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.hh-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
-.hh-k { font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.hh-k { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
 
 .hh-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); margin-top: 8px; }
 
@@ -1451,7 +1454,7 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 
 .hh-rank { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 8px; }
 
-.hh-rank-item { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.hh-rank-item { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 13px; }
 
 .hh-rank-no { width: 18px; height: 18px; border-radius: 50%; background: var(--card); color: var(--muted); font-size: 11px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); flex: none; }
 
@@ -1461,17 +1464,17 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 
 .hh-row:hover { background: var(--field); }
 
-.hh-slash { color: var(--muted); font-size: 15px; margin: 0 3px; }
+.hh-slash { color: var(--muted); font-size: 15px; margin: 0 4px; }
 
-.hh-sort { border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 12px; padding: 3px 10px; border-radius: 999px; }
+.hh-sort { border: 1px solid var(--border); background: var(--card); color: var(--muted); font-size: 12px; padding: 4px 12px; border-radius: 999px; }
 
 .hh-sort.on { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 600; }
 
-.hh-sorts { display: flex; gap: 6px; }
+.hh-sorts { display: flex; gap: 8px; }
 
-.hh-stock { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+.hh-stock { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 12px; margin-bottom: 8px; }
 
-.hh-stock-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 13px; }
+.hh-stock-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
 
 .hh-sub { font-size: 13px; font-weight: 600; margin: 16px 0 8px; }
 
@@ -1481,7 +1484,7 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 
 .hh-tbl td.num, .hh-tbl th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
-.hh-unit { font-size: 12px; font-weight: 600; margin-left: 6px; color: var(--muted); }
+.hh-unit { font-size: 12px; font-weight: 600; margin-left: 8px; color: var(--muted); }
 
 .hh-up { color: var(--up); }
 
@@ -1489,23 +1492,23 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 
 .hh-w { margin-left: auto; color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
 
-.hh-warn { margin-top: 12px; padding: 10px 12px; background: var(--amber-bg); border: 1px solid #fed7aa; border-radius: 10px; font-size: 12px; line-height: 1.7; white-space: normal; }
+.hh-warn { margin-top: 12px; padding: 12px 12px; background: var(--amber-bg); border: 1px solid #fed7aa; border-radius: var(--radius-sm); font-size: 12px; line-height: 1.75; white-space: normal; }
 
 .hh-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-.risk-cols { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 14px; }
+.risk-cols { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 16px; }
 
-.risk-hedge { margin-top: 14px; border: 1px solid #f3d9b8; background: var(--amber-bg); border-radius: 10px; padding: 12px 14px; }
+.risk-hedge { margin-top: 16px; border: 1px solid #f3d9b8; background: var(--amber-bg); border-radius: var(--radius-sm); padding: 12px 16px; }
 
 .risk-hedge h4 { margin: 0 0 8px; color: var(--amber); }
 
-.risk-hedge li { line-height: 1.9; }
+.risk-hedge li { line-height: 1.75; }
 
-.risk-issue li { line-height: 1.9; }
+.risk-issue li { line-height: 1.75; }
 
-  .risk-stat { padding: 8px 10px; }
+  .risk-stat { padding: 8px 12px; }
 
-.risk-stat { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.risk-stat { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 12px; }
 
 .risk-stat .v { font-size: 16px; font-weight: 700; }
 
@@ -1515,15 +1518,15 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 
   .risk-stats { margin-top: 8px; gap: 8px; }
 
-.risk-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 14px; }
+.risk-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 16px; }
 
-.risk-weight { margin-top: 14px; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.risk-weight { margin-top: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; }
 
-.risk-weight h4 { margin: 0 0 10px; font-size: 13px; }
+.risk-weight h4 { margin: 0 0 12px; font-size: 13px; }
 
 .w-cap { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--amber); }
 
-.w-fill { height: 100%; background: var(--blue); border-radius: 7px; }
+.w-fill { height: 100%; background: var(--blue); border-radius: var(--radius-sm); }
 
 .w-fill.over { background: var(--up); }
 
@@ -1531,7 +1534,7 @@ select { padding-right: 6px; background: var(--card); color: var(--ink); }
 
 .w-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; }
 
-.w-track { flex: 1; height: 14px; background: var(--bg); border-radius: 7px; overflow: hidden; position: relative; }
+.w-track { flex: 1; height: 14px; background: var(--bg); border-radius: var(--radius-sm); overflow: hidden; position: relative; }
 
 .w-val { width: 52px; }
 /* ---------- v3.8.20 全局原生下拉统一为个股诊断 selpick 同款风格 ---------- */
@@ -1539,11 +1542,11 @@ select {
   appearance: none; -webkit-appearance: none; -moz-appearance: none;
   border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
   background: var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2398A1AC' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
-  padding: 0 28px 0 10px;
+  padding: 0 28px 0 12px;
   color: var(--ink); font-size: 13px; cursor: pointer;
 }
 select:hover { border-color: var(--blue); }
-select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-bg); }
+select:focus { outline: none; border-color: var(--blue); box-shadow: var(--ring); }
 
 /* ---------- v3.8.22 自选表表头排序（三态：降序/升序/取消） ----------
    v3.8.49 修 bug：原来前两条规则里写的是 `#tvWatchTable th.sortable`（漏了 ::after），
@@ -1553,15 +1556,15 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
    现在一律收敛到 ::after 上；同时清掉两个已下线专页（#watchTable / #holdTable）的死选择器。 */
 #tvWatchTable th.sortable, #tvHoldTable th.sortable { cursor: pointer; user-select: none; }
 #tvWatchTable th.sortable:hover, #tvHoldTable th.sortable:hover { color: var(--blue); }
-#tvWatchTable th.sortable::after, #tvHoldTable th.sortable::after { content: '⇅'; margin-left: 3px; font-size: 10px; opacity: .35; }
+#tvWatchTable th.sortable::after, #tvHoldTable th.sortable::after { content: '⇅'; margin-left: 4px; font-size: 10px; opacity: .35; }
 #tvWatchTable th.sortable.sorted-desc::after, #tvHoldTable th.sortable.sorted-desc::after { content: '▼'; opacity: 1; color: var(--blue); }
 #tvWatchTable th.sortable.sorted-asc::after, #tvHoldTable th.sortable.sorted-asc::after { content: '▲'; opacity: 1; color: var(--blue); }
 
 /* ---------- v3.8.26 持仓页指数条（红涨绿跌） ---------- */
 .idx-bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 8px; }
 .idx-chip {
-  display: inline-flex; align-items: baseline; gap: 6px;
-  padding: 4px 10px; border-radius: 8px;
+  display: inline-flex; align-items: baseline; gap: 8px;
+  padding: 4px 12px; border-radius: var(--radius-sm);
   background: var(--card, #fff); border: 1px solid var(--line, #e5e8ec);
   font-size: 12px; line-height: 1.4;
 }
@@ -1571,12 +1574,12 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 .idx-chip.up .i-val, .idx-chip.up .i-pct { color: var(--up); }
 .idx-chip.down .i-val, .idx-chip.down .i-pct { color: var(--down); }
 /* ---------- v3.8.34 总览页「大盘指数」：放大成主视觉条 ---------- */
-.idx-bar-lg { gap: 10px; margin: 4px 0 8px; }
-.idx-bar-lg .idx-chip { padding: 8px 14px; border-radius: 10px; font-size: 13px; gap: 8px; }
+.idx-bar-lg { gap: 12px; margin: 4px 0 8px; }
+.idx-bar-lg .idx-chip { padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; gap: 8px; }
 /* v3.8.41 标签与数值同字号（13px），数值不再放大加粗，保持安静的行情条形 */
 .idx-bar-lg .idx-chip .i-name { font-size: 13px; }
-.idx-bar-lg .idx-chip .i-val { font-size: 13px; font-weight: 500; color: var(--ink); }
-.idx-bar-lg .idx-chip .i-pct { font-size: 13px; font-weight: 500; }
+.idx-bar-lg .idx-chip .i-val { font-size: 13px; font-weight: 600; color: var(--ink); }
+.idx-bar-lg .idx-chip .i-pct { font-size: 13px; font-weight: 600; }
 /* ---------- v3.8.36 总览页「持仓快照」统计：与大盘指数同款胶囊（4 项） ---------- */
 #tvHoldSummary { margin-bottom: 12px; }
 /* 盈亏数值与比例一并跟随涨跌着色（覆盖 .idx-bar-lg .idx-chip .i-val 的深色） */
@@ -1584,7 +1587,7 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 #tvHoldSummary .idx-chip.down .i-val, #tvHoldSummary .idx-chip.down .i-pct { color: var(--down); }
 #tvHoldSummary .hold-warn { align-self: center; font-size: 12px; color: var(--ink-3, #98A1AC); }
 @media (max-width: 720px) {
-  .idx-bar-lg .idx-chip { padding: 6px 10px; }
+  .idx-bar-lg .idx-chip { padding: 8px 12px; }
 }
 /* ---------- v3.8.38 胶囊等宽网格（大盘指数 / 持仓信息统计共用）----------
    v3.8.46 改 auto-fit 自适应列数：容器宽就多列、窄就少列。
@@ -1592,7 +1595,7 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
    装不下「浮动盈亏 +123456.78 +12.34%」这类长数值，会把整条撑破 */
 .idx-bar-eq {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 10px; align-items: stretch; margin: 4px 0 10px;
+  gap: 12px; align-items: stretch; margin: 4px 0 12px;
 }
 /* v3.8.48 胶囊内容左对齐：等宽网格下每格宽于内容，居中会让标签位置随数值长度漂移，
    左对齐后各胶囊的标签起点一致、与卡片内其他文字同一左基线，更好扫读 */
@@ -1632,7 +1635,7 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
    而在 v3.8.59 给 .i-val 的 6.5em 定宽 —— 6.5em 是按持仓快照卡里「¥123,456.78」那种
    6 位金额留的余量，而指数点位远没这么长：实测 12px tabular-nums 下
    「3,772.67」45.1px（3.76em）、最长的「12,152.34」52.2px（4.35em），
-   盒子却被撑到 84.5px（6.5em），且因设了 text-align:right，多出的 32.5px 空白
+   盒子却被撑到 84.5px（6.5em），且因设了 text-align:right，多出的 32px 空白
    全落在**文字左侧** —— 视觉上就是「名称 …… 点位」中间一大段空。
    为什么只改 #tvIdxBar：持仓快照卡的数值确有 6 位金额（浮盈可能是 -123,456.78），
    6.5em 对它是必要的，不能一起收窄。
@@ -1689,14 +1692,14 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
    ============================================================ */
 .qa-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr) 230px; gap: 16px; height: 640px; }
 .qa-layout.no-jump { grid-template-columns: 260px minmax(0, 1fr); }
-.qa-right { display: flex; flex-direction: column; gap: 8px; overflow: hidden; border-radius: var(--card-r, 12px); background: var(--card, #fff); padding: 10px; }
+.qa-right { display: flex; flex-direction: column; gap: 8px; overflow: hidden; border-radius: var(--card-r, 12px); background: var(--card, #fff); padding: 12px; }
 .qa-right.collapsed { display: none; }
 /* 折叠（no-jump）只在宽屏生效：≤1080 的右栏已改成滑出面板，由 .jump-open 控制 */
 @media (min-width: 1081px) { .qa-layout.no-jump .qa-right { display: none; } }
 .qa-jump-head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--ink-2, #475569); }
 .qa-jump-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
 .qa-jump-item {
-  text-align: left; border: 0; background: transparent; padding: 7px 8px; border-radius: 7px;
+  text-align: left; border: 0; background: transparent; padding: 8px 8px; border-radius: var(--radius-sm);
   font-size: 12px; color: var(--ink-2, #475569); cursor: pointer;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
@@ -1720,11 +1723,11 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 }
 /* 遮罩：默认不占位，只在滑出面板打开时出现 */
 .qa-jump-mask { display: none; position: fixed; inset: 0; z-index: 310; background: rgba(15, 23, 42, .35); }
-.qa-side { display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.qa-side { display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
 .qa-history { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
 .qa-hist-item {
   display: flex; align-items: center; gap: 4px; text-align: left;
-  border: 0; background: transparent; padding: 8px 10px; border-radius: 8px;
+  border: 0; background: transparent; padding: 8px 12px; border-radius: var(--radius-sm);
   font-size: 13px; color: var(--ink); cursor: pointer;
 }
 .qa-hist-item:hover { background: var(--bg); }
@@ -1737,10 +1740,10 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 .qa-hist-del:hover { background: var(--up-bg); color: var(--up); }
 .qa-hist-item:hover .qa-hist-del { visibility: visible; }
 .qa-main { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
-.qa-messages { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.qa-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 .qa-composer { border-top: 1px solid var(--line); padding: 12px; }
 .qa-input-box {
-  border: 1.5px solid var(--line); border-radius: 14px; padding: 8px 10px 6px;
+  border: 1.5px solid var(--line); border-radius: var(--radius); padding: 8px 12px 8px;
   background: var(--card); transition: border-color .15s;
 }
 .qa-input-box:focus-within { border-color: var(--blue); }
@@ -1766,67 +1769,67 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 .qa-send-btn:disabled { background: #c9d6f2; cursor: not-allowed; filter: none; }
 .qa-send-btn.stop { background: var(--ink-3); }
 .qa-src-bar { margin-top: 8px; }
-.qa-src-hint { font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.qa-src-hint { font-size: 12px; color: var(--ink-3); line-height: 1.6; }
 .qa-src-hint.err { color: var(--up); }
-.qa-empty-tip { color: var(--ink-3); font-size: 13px; padding: 14px 2px; line-height: 1.8; }
+.qa-empty-tip { color: var(--ink-3); font-size: 13px; padding: 16px 2px; line-height: 1.75; }
 .qa-empty-tip b { color: var(--blue); font-weight: 600; }
 
 /* v3.9.2 快捷提问示例（空对话态）—— 照搬 trade-manager，变量换成本项目命名
    （--muted→--ink-3 / --accent→--blue / --accent-light→--blue-bg / --border→--line / --text→--ink）。
    卡片背景硬编码 var(--card) 改为 var(--card)，深色主题下才不会白底黑字。 */
-.qa-examples { display: flex; flex-direction: column; gap: 14px; padding: 2px 0 6px; }
-.qa-ex-intro { color: var(--ink-3); font-size: 13px; line-height: 1.85; }
+.qa-examples { display: flex; flex-direction: column; gap: 16px; padding: 2px 0 8px; }
+.qa-ex-intro { color: var(--ink-3); font-size: 13px; line-height: 1.75; }
 .qa-ex-intro b { color: var(--blue); font-weight: 600; }
-.qa-ex-group { display: flex; flex-direction: column; gap: 7px; }
+.qa-ex-group { display: flex; flex-direction: column; gap: 8px; }
 .qa-ex-title { font-size: 12px; font-weight: 600; color: var(--ink); }
 .qa-ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
 .qa-ex-card {
-  text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: 10px;
-  padding: 9px 11px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; font: inherit;
+  text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: var(--radius-sm);
+  padding: 8px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; font: inherit;
   transition: border-color .15s, background .15s, transform .1s;
 }
 .qa-ex-card:hover { border-color: var(--blue); background: var(--blue-bg); }
 .qa-ex-card:active { transform: scale(.985); }
 .qa-ex-card b { font-size: 13px; font-weight: 600; color: var(--ink); }
-.qa-ex-card span { font-size: 12px; color: var(--ink-3); line-height: 1.55; }
-.qa-ex-foot { color: var(--ink-3); font-size: 12px; text-align: center; padding-top: 2px; line-height: 1.7; }
+.qa-ex-card span { font-size: 12px; color: var(--ink-3); line-height: 1.6; }
+.qa-ex-foot { color: var(--ink-3); font-size: 12px; text-align: center; padding-top: 2px; line-height: 1.75; }
 
 /* 消息气泡 */
 .msg {
-  max-width: 82%; padding: 10px 14px; border-radius: 12px; font-size: 14px;
-  line-height: 1.7; white-space: pre-wrap; word-break: break-word;
+  max-width: 82%; padding: 12px 16px; border-radius: var(--radius); font-size: 14px;
+  line-height: 1.75; white-space: pre-wrap; word-break: break-word;
 }
 .msg.user { align-self: flex-end; background: var(--blue); color: var(--card); }
 /* v3.17.1 图片提问：用户气泡里展示附件图片缩略图（点击看原图） */
-.qa-user-imgs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.qa-user-img { width: 120px; max-height: 120px; object-fit: cover; border-radius: 8px; display: block; cursor: zoom-in; border: 1px solid rgba(255, 255, 255, .35); }
+.qa-user-imgs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.qa-user-img { width: 120px; max-height: 120px; object-fit: cover; border-radius: var(--radius-sm); display: block; cursor: zoom-in; border: 1px solid rgba(255, 255, 255, .35); }
 .msg.assistant { align-self: flex-start; background: var(--bg); border: 1px solid var(--line); }
 /* 助手气泡要渲染 Markdown（块级元素），不能保留 pre-wrap 的空白语义 */
 .msg.assistant { white-space: normal; }
 .msg.assistant p { margin: 0 0 8px; }
 .msg.assistant p:last-child { margin-bottom: 0; }
-.msg.assistant .qa-h { margin: 13px 0 6px; font-size: 14px; font-weight: 700; line-height: 1.5; }
+.msg.assistant .qa-h { margin: 12px 0 8px; font-size: 14px; font-weight: 700; line-height: 1.6; }
 .msg.assistant .qa-h:first-child { margin-top: 0; }
-.msg.assistant ul, .msg.assistant ol { margin: 4px 0 9px; padding-left: 20px; }
-.msg.assistant li { margin: 3px 0; }
+.msg.assistant ul, .msg.assistant ol { margin: 4px 0 8px; padding-left: 20px; }
+.msg.assistant li { margin: 4px 0; }
 .msg.assistant strong { font-weight: 700; }
 .msg.assistant code {
   background: rgba(52, 104, 214, .08); color: var(--blue);
-  padding: 1px 5px; border-radius: 4px; font-size: 12px;
+  padding: 1px 4px; border-radius: var(--radius-sm); font-size: 12px;
 }
 .msg.assistant blockquote {
-  margin: 7px 0; padding: 6px 11px; border-left: 3px solid var(--blue);
-  color: var(--ink-3); background: var(--blue-bg); border-radius: 0 6px 6px 0;
+  margin: 8px 0; padding: 8px 12px; border-left: 3px solid var(--blue);
+  color: var(--ink-3); background: var(--blue-bg); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 .msg.assistant .qa-gap { height: 5px; }
-.msg.assistant .qa-hr { border: 0; border-top: 1px solid var(--line); margin: 11px 0; }
+.msg.assistant .qa-hr { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
 .msg.assistant .qa-code {
-  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
-  padding: 8px 10px; overflow-x: auto; font-size: 12px; margin: 7px 0; white-space: pre;
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 8px 12px; overflow-x: auto; font-size: 12px; margin: 8px 0; white-space: pre;
 }
-.qa-table-wrap { overflow-x: auto; margin: 8px 0; border-radius: 8px; }
+.qa-table-wrap { overflow-x: auto; margin: 8px 0; border-radius: var(--radius-sm); }
 .qa-table { border-collapse: collapse; font-size: 12px; width: 100%; }
-.qa-table th, .qa-table td { border: 1px solid var(--line); padding: 5px 9px; text-align: left; white-space: nowrap; }
+.qa-table th, .qa-table td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; white-space: nowrap; }
 .qa-table th { background: var(--bg); font-weight: 600; }
 .qa-table tbody tr:nth-child(even) { background: var(--field); }
 
@@ -1840,7 +1843,7 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 .msg.note {
   align-self: center; max-width: 92%;
   background: var(--down-bg); border: 1px solid #bbf7d0; color: var(--down);
-  font-size: 12px; line-height: 1.7;
+  font-size: 12px; line-height: 1.75;
 }
 /* 便签里的表格是「数据凭证」，白底才看得清，否则绿色气泡会把数字泡糊 */
 .msg.note .qa-tbl, .msg.note .qa-tbl-cap { background: var(--card); }
@@ -1848,16 +1851,16 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
    和「红涨绿跌」抢语义（绿色的股票名看着像在涨）。所以表格内显式回到正文色，
    只让 .up / .down 那两列带色。夹具页实测过：证券代码/名称列必须是 --ink。 */
 .msg.note .qa-tbl { color: var(--ink); }
-.msg.note .qa-tbl-cap { border-radius: 0 0 8px 8px; }
+.msg.note .qa-tbl-cap { border-radius: 0 0 var(--radius-sm) var(--radius-sm); }
 /* 技能调用标注：让用户一眼看出这轮取到了哪些数据 */
 .qa-skill-tag {
-  display: block; margin: 5px 0 6px; padding: 4px 10px; border-radius: 8px;
-  background: var(--blue-bg); color: var(--blue); font-size: 12px; line-height: 1.5;
+  display: block; margin: 4px 0 8px; padding: 4px 12px; border-radius: var(--radius-sm);
+  background: var(--blue-bg); color: var(--blue); font-size: 12px; line-height: 1.6;
 }
 .qa-skill-ms { opacity: .7; }
 
 /* 数据表（可横向滚动）：条件选股 / 板块成分 / 行情 / 财务都用它 */
-.qa-tbl-wrap { overflow-x: auto; margin-top: 8px; border-radius: 8px; }
+.qa-tbl-wrap { overflow-x: auto; margin-top: 8px; border-radius: var(--radius-sm); }
 .qa-tbl { border-collapse: collapse; font-size: 12px; white-space: nowrap; }
 .qa-tbl th, .qa-tbl td { border: 1px solid var(--line); padding: 4px 8px; text-align: right; }
 .qa-tbl th {
@@ -1869,11 +1872,11 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 .qa-tbl tbody tr:nth-child(even) { background: var(--field); }
 .qa-tbl .up { color: var(--up); }
 .qa-tbl .down { color: var(--down); }
-.qa-tbl-cap { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+.qa-tbl-cap { font-size: 12px; color: var(--ink-3); margin-top: 8px; }
 
 /* 便签内的迷你走势图（内联 SVG） */
-.qa-chart { margin-top: 9px; padding-top: 8px; border-top: 1px dashed #bbf7d0; }
-.qa-chart-lg { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 3px; }
+.qa-chart { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #bbf7d0; }
+.qa-chart-lg { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 4px; }
 .qa-chart-lg .up { color: var(--up); font-weight: 600; }
 .qa-chart-lg .down { color: var(--down); font-weight: 600; }
 .qa-chart-lg .lg-ma { color: var(--amber); }
@@ -1882,15 +1885,15 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 /* 区间/形态选股的扫描进度条（问答流里临时插入，跑完自动移除） */
 .msg.note.form-prog { background: var(--blue-bg); border-color: #bfdbfe; color: var(--blue); width: 92%; }
 .form-prog .fp-line { font-size: 12px; }
-.form-prog .fp-bar { height: 6px; border-radius: 4px; background: var(--blue-bg); overflow: hidden; margin: 6px 0 4px; }
+.form-prog .fp-bar { height: 6px; border-radius: var(--radius-sm); background: var(--blue-bg); overflow: hidden; margin: 8px 0 4px; }
 .form-prog .fp-bar > i { display: block; height: 100%; width: 0; background: var(--blue); transition: width .18s linear; }
 .form-prog .fp-txt { font-size: 12px; color: var(--blue); text-align: right; }
 
 /* 附件 chips */
-.qa-attach-chips { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 8px; }
+.qa-attach-chips { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 8px; }
 .qa-attach-chip {
-  display: inline-flex; align-items: center; gap: 6px; background: var(--bg);
-  border: 1px solid var(--line); border-radius: 8px; padding: 3px 8px;
+  display: inline-flex; align-items: center; gap: 8px; background: var(--bg);
+  border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 4px 8px;
   font-size: 12px; color: var(--ink);
 }
 .qa-attach-chip b { font-weight: 600; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1900,13 +1903,13 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 
 /* 手机档：左右变上下，历史列表收成一条横向滚动条，避免占掉整个对话高度 */
 @media (max-width: 720px) {
-  .qa-layout { grid-template-columns: 1fr; height: auto; gap: 10px; }
+  .qa-layout { grid-template-columns: 1fr; height: auto; gap: 12px; }
   .qa-side { flex-direction: row; align-items: center; gap: 8px; flex-wrap: wrap; }
   .qa-side #newChatBtn { width: auto; flex: none; }
   .qa-side .search-input { flex: 1; min-width: 120px; }
   .qa-history {
     flex: 1 0 100%; flex-direction: row; overflow-x: auto; overflow-y: hidden;
-    gap: 6px; padding-bottom: 2px; -webkit-overflow-scrolling: touch;
+    gap: 8px; padding-bottom: 2px; -webkit-overflow-scrolling: touch;
   }
   .qa-history::-webkit-scrollbar { display: none; }
   .qa-hist-item { flex: none; background: var(--bg); max-width: 62vw; }
@@ -1918,7 +1921,7 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
   .qa-spark { height: 112px; }
   /* v3.9.2 快捷提问：窄屏单列，卡片加高、字号加大，更好点按 */
   .qa-ex-grid { grid-template-columns: 1fr; }
-  .qa-ex-card { padding: 10px 12px; }
+  .qa-ex-card { padding: 12px 12px; }
   .qa-ex-card span { font-size: 12px; }
 }
 
@@ -1926,7 +1929,7 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
    v3.9.9 技能中心：妙想 Key 配置 + 技能卡片 + 问答页技能状态条
    ============================================================ */
 /* Key 输入行：输入框占满、眼睛按钮固定宽 */
-.mx-key-row { display: flex; gap: 8px; margin-top: 10px; }
+.mx-key-row { display: flex; gap: 8px; margin-top: 12px; }
 .mx-key-row .search-input { flex: 1; min-width: 0; }
 .mx-key-row .btn { flex: 0 0 auto; }
 .mx-ok { color: var(--down); font-weight: 600; }   /* 「已配置」是好事 → 用正向的绿色（A 股语义相反但这是状态不是行情） */
@@ -1935,26 +1938,26 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 .skill-list { display: flex; flex-direction: column; gap: 8px; }
 .sk-item {
   border: 1px solid var(--line); border-radius: var(--radius-sm);
-  padding: 10px 12px; background: var(--field);
+  padding: 12px 12px; background: var(--field);
 }
 .sk-item.off { opacity: .62; }
-.sk-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; }
+.sk-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
 .sk-ico { font-size: 15px; }
 .sk-badge {
-  font-size: 11px; line-height: 1; padding: 3px 7px; border-radius: 99px;
+  font-size: 11px; line-height: 1; padding: 4px 8px; border-radius: 99px;
   background: var(--blue-bg); color: var(--blue); white-space: nowrap;
 }
 .sk-badge.mx { background: var(--amber-bg); color: var(--amber); }
 .sk-badge.quota { background: var(--down-bg); color: var(--down); }
 .sk-badge.sup { background: #f1f0fa; color: #5b51a8; }
 .sk-badge.warn { background: var(--up-bg); color: var(--up); }
-.sk-desc { font-size: 12px; color: var(--ink-2); margin-top: 5px; line-height: 1.55; }
+.sk-desc { font-size: 12px; color: var(--ink-2); margin-top: 4px; line-height: 1.6; }
 .sk-src { font-size: 12px; color: var(--ink-3); margin-top: 4px; }
 .sk-actions { display: flex; gap: 8px; margin-top: 8px; }
 /* 问答输入框上方的技能状态条 */
 .qa-skill-hint {
   font-size: 11px; color: var(--ink-3); line-height: 1.4;
-  padding: 0 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding: 0 2px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 /* 工具便签能力标签里的来源小字 */
 .qa-skill-src { opacity: .72; font-weight: 400; }
@@ -1964,35 +1967,35 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 }
 
 /* ---------- v3.9.13 审计级网络日志（.nl-*）：触发/URL/参数/返回逐条可展开 ---------- */
-.nl-item { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 4px; background: var(--bg); }
-.nl-item summary { display: flex; align-items: center; gap: 6px; padding: 6px 8px; cursor: pointer; font-size: 12px; min-width: 0; }
+.nl-item { border: 1px solid var(--line); border-radius: var(--radius-sm); margin-bottom: 4px; background: var(--bg); }
+.nl-item summary { display: flex; align-items: center; gap: 8px; padding: 8px 8px; cursor: pointer; font-size: 12px; min-width: 0; }
 .nl-item summary::-webkit-details-marker { display: none; }
 .nl-t { color: var(--ink-3); font-variant-numeric: tabular-nums; flex: none; }
-.nl-badge { flex: none; font-size: 11px; font-weight: 700; padding: 1px 5px; border-radius: 4px; }
+.nl-badge { flex: none; font-size: 11px; font-weight: 700; padding: 1px 4px; border-radius: var(--radius-sm); }
 .nl-badge.ok { color: var(--down); background: rgba(21, 128, 61, .12); }
 .nl-badge.fail { color: var(--up); background: rgba(185, 28, 28, .14); }
 .nl-kind { color: var(--ink-3); flex: none; font-size: 11px; }
 .nl-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .nl-ms { color: var(--ink-3); flex: none; font-variant-numeric: tabular-nums; font-size: 11px; }
 .nl-item.nl-fail { border-color: rgba(185, 28, 28, .35); }
-.nl-row { display: flex; gap: 8px; padding: 3px 10px 3px 12px; font-size: 12px; border-top: 1px dashed var(--line); }
+.nl-row { display: flex; gap: 8px; padding: 4px 12px 4px 12px; font-size: 12px; border-top: 1px dashed var(--line); }
 .nl-k { flex: none; width: 34px; color: var(--ink-3); }
 .nl-v { word-break: break-all; min-width: 0; color: var(--ink-2); }
 
 /* ---------- v3.10.0 动量筛选：条件输入行 + 精确名次徽标 ---------- */
-.mom-conds { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; margin-bottom: 6px; }
-.mom-conds .num-in { width: 72px; padding: 3px 6px; }
+.mom-conds { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 13px; margin-bottom: 8px; }
+.mom-conds .num-in { width: 72px; padding: 4px 8px; }
 .mom-conds .chk { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
 .mom-exact { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
   color: var(--down); background: rgba(21, 128, 61, .12); margin-left: 8px; }
-.msg.user.flash { box-shadow: 0 0 0 2px var(--up, #d93a2b) inset; border-radius: 8px; transition: box-shadow .4s; }
+.msg.user.flash { box-shadow: 0 0 0 2px var(--up, #d93a2b) inset; border-radius: var(--radius-sm); transition: box-shadow .4s; }
 /* v3.12.4 服务器日志 tail 显示 */
-.srv-log { font: 11px/1.6 Consolas, monospace; white-space: pre-wrap; word-break: break-all; background: var(--bg); padding: 8px 10px; border-radius: 8px; max-height: 420px; overflow: auto; }
+.srv-log { font: 11px/1.6 Consolas, monospace; white-space: pre-wrap; word-break: break-all; background: var(--bg); padding: 8px 12px; border-radius: var(--radius-sm); max-height: 420px; overflow: auto; }
 /* v3.12.7 常驻示例问题面板（工具栏 💡 切换，选完自动收起） */
 .qa-ex-panel {
   max-height: 320px; overflow-y: auto; border: 1px solid var(--line, #e2e8f0);
-  border-radius: 10px; padding: 10px; background: var(--card, #fff);
-  margin-bottom: 6px; box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+  border-radius: var(--radius-sm); padding: 12px; background: var(--card, #fff);
+  margin-bottom: 8px; box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
 }
 /* v3.12.8 问答回答字体小一号：14px → 13px（用户消息保持 14px；标题同步 13.5px） */
 .msg.assistant { font-size: 13px; }
@@ -2003,11 +2006,11 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 .qa-plus-menu, .qa-skill-menu {
   position: absolute; left: 10px; bottom: 100%; z-index: 30; margin-bottom: 8px;
   width: 300px; background: var(--card, #fff); border: 1px solid var(--line, #e2e8f0);
-  border-radius: 12px; box-shadow: 0 12px 32px rgba(15, 23, 42, .14); padding: 6px;
+  border-radius: var(--radius); box-shadow: 0 12px 32px rgba(15, 23, 42, .14); padding: 8px;
 }
 .qa-plus-item {
   display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
-  border: 0; background: transparent; padding: 9px 10px; border-radius: 8px;
+  border: 0; background: transparent; padding: 8px 12px; border-radius: var(--radius-sm);
   font-size: 13px; color: var(--ink); cursor: pointer;
 }
 .qa-plus-item:hover { background: var(--bg, #f1f5f9); }
@@ -2019,7 +2022,7 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 .qa-skill-pick { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
 .qa-skill-row {
   display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
-  border: 0; background: transparent; padding: 8px 10px; border-radius: 8px;
+  border: 0; background: transparent; padding: 8px 12px; border-radius: var(--radius-sm);
   font-size: 12px; color: var(--ink); cursor: pointer;
 }
 .qa-skill-row:hover { background: var(--bg, #f1f5f9); }
@@ -2042,12 +2045,12 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
   .qa-ex-panel { max-height: 46vh; }
 }
 /* v3.13.3 图片附件缩略图 */
-.qa-attach-chip { display: inline-flex; align-items: center; gap: 6px; }
-.qa-chip-img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line, #e2e8f0); }
+.qa-attach-chip { display: inline-flex; align-items: center; gap: 8px; }
+.qa-chip-img { width: 40px; height: 40px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--line, #e2e8f0); }
 /* v3.13.4 示例面板头部（✕ 收起）+ 弹层层级加固（手机上不被其他层挡住） */
 .qa-ex-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 2px 8px; border-bottom: 1px solid var(--line, #e2e8f0); margin-bottom: 8px; }
 .qa-ex-head b { font-size: 13px; }
-.qa-ex-close { border: 0; background: transparent; font-size: 15px; cursor: pointer; color: var(--ink-3, #94a3b8); padding: 2px 6px; border-radius: 6px; }
+.qa-ex-close { border: 0; background: transparent; font-size: 15px; cursor: pointer; color: var(--ink-3, #94a3b8); padding: 2px 8px; border-radius: var(--radius-sm); }
 .qa-ex-close:hover { background: var(--bg, #f1f5f9); color: var(--ink); }
 .qa-plus-menu, .qa-skill-menu, .qa-ex-panel { z-index: 200; }
 @media (max-width: 720px) {
@@ -2056,20 +2059,20 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 /* v3.14.2 按住说话 */
 .qa-rec-hint {
   position: absolute; left: 50%; transform: translateX(-50%); bottom: 100%; margin-bottom: 8px;
-  background: var(--up, #d93a2b); color: var(--card); font-size: 12px; padding: 6px 14px;
+  background: var(--up, #d93a2b); color: var(--card); font-size: 12px; padding: 8px 16px;
   border-radius: 999px; z-index: 210; white-space: nowrap; box-shadow: 0 6px 18px rgba(217, 58, 43, .3);
 }
 .qa-tool-btn.rec { color: var(--up, #d93a2b) !important; background: var(--up-bg); animation: qaPulse 1.2s infinite; touch-action: none; user-select: none; -webkit-user-select: none; }
 .qa-plus-btn, .qa-tool-btn { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
 /* v3.15.0 输入区重排 + 手机抽屉 */
 .qa-src-bar { display: none; }
-.qa-mtop { display: none; align-items: center; gap: 8px; margin-bottom: 6px; }
-.qa-drawer-badge { display: inline-flex; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--blue); color: var(--card); font-size: 10px; align-items: center; justify-content: center; margin-left: 4px; }
+.qa-mtop { display: none; align-items: center; gap: 8px; margin-bottom: 8px; }
+.qa-drawer-badge { display: inline-flex; min-width: 16px; height: 16px; padding: 0 4px; border-radius: var(--radius-sm); background: var(--blue); color: var(--card); font-size: 10px; align-items: center; justify-content: center; margin-left: 4px; }
 .qa-tool-btn .mic-glyph { display: block; }
-.qa-tool-btn .mic-bars { display: none; align-items: flex-end; gap: 2.5px; height: 16px; }
+.qa-tool-btn .mic-bars { display: none; align-items: flex-end; gap: 2px; height: 16px; }
 .qa-tool-btn.rec .mic-glyph { display: none; }
 .qa-tool-btn.rec .mic-bars { display: inline-flex; }
-.qa-tool-btn.rec .mic-bars i { width: 3.5px; background: var(--up); border-radius: 2px; animation: micbar 0.9s ease-in-out infinite; }
+.qa-tool-btn.rec .mic-bars i { width: 3.5px; background: var(--up); border-radius: var(--radius-sm); animation: micbar 0.9s ease-in-out infinite; }
 .qa-tool-btn.rec .mic-bars i:nth-child(1) { height: 8px; }
 .qa-tool-btn.rec .mic-bars i:nth-child(2) { height: 15px; animation-delay: 0.15s; }
 .qa-tool-btn.rec .mic-bars i:nth-child(3) { height: 11px; animation-delay: 0.3s; }
@@ -2077,7 +2080,7 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 @keyframes micbar { 0%, 100% { transform: scaleY(0.45); } 50% { transform: scaleY(1); } }
 .qa-tool-btn.rec { color: var(--up); background: var(--up-bg); border-color: #F09595; }
 #qaDrawerMask { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.35); z-index: 300; }
-#qaDrawer { position: fixed; top: 0; left: 0; bottom: 0; width: min(78vw, 320px); background: var(--card, #fff); z-index: 310; box-shadow: 0 0 40px rgba(15, 23, 42, 0.2); display: flex; flex-direction: column; gap: 10px; padding: 14px 12px; overflow-y: auto; }
+#qaDrawer { position: fixed; top: 0; left: 0; bottom: 0; width: min(78vw, 320px); background: var(--card, #fff); z-index: 310; box-shadow: 0 0 40px rgba(15, 23, 42, 0.2); display: flex; flex-direction: column; gap: 12px; padding: 16px 12px; overflow-y: auto; }
 .qa-drawer-head { display: flex; align-items: center; justify-content: space-between; }
 #qaHistoryListM { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 /* v3.21.4 顶部工具条从 720 提到 1080：它现在承载「提问」入口，
@@ -2115,7 +2118,7 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 .tab-ico .ico { width: 17px; height: 17px; color: var(--ink-2); }
 .tab.active .tab-ico .ico { color: var(--blue); }
 /* 分析页签：原来是彩色 emoji，现在与导航同一套线条图标 */
-.an-tab .ico { width: 14px; height: 14px; margin-right: 5px; vertical-align: -2px; }
+.an-tab .ico { width: 14px; height: 14px; margin-right: 4px; vertical-align: -2px; }
 /* 按钮内的图标：与文字间距 6px（沿用 .btn 的 gap，不必再加 margin） */
 .btn .ico { width: 15px; height: 15px; }
 .qa-plus-ic .ico { width: 17px; height: 17px; color: var(--ink-2); }
@@ -2160,12 +2163,12 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
   .tbl-stack, .tbl-stack tbody { display: block; width: 100%; }
   .tbl-stack tr {
     display: grid; grid-template-columns: 1fr 1fr;
-    column-gap: 14px; row-gap: 3px;
-    padding: 10px 2px; border-bottom: 1px solid var(--line);
+    column-gap: 16px; row-gap: 4px;
+    padding: 12px 2px; border-bottom: 1px solid var(--line);
   }
   .tbl-stack tr:last-child { border-bottom: 0; }
   .tbl-stack td {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
     padding: 1px 0; border: 0; text-align: left; min-width: 0;
     overflow-wrap: anywhere;
   }
@@ -2176,12 +2179,12 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
   .tbl-stack td:not([data-label])::before { content: none; }
   .tbl-stack td.cell-title { grid-column: 1 / -1; justify-content: flex-start; }
   .tbl-stack td.cell-note { grid-column: 1 / -1; display: block; }
-  .tbl-stack td.cell-note::before { display: inline; margin-right: 6px; }
+  .tbl-stack td.cell-note::before { display: inline; margin-right: 8px; }
   .tbl-stack td.cell-actions { grid-column: 1 / -1; justify-content: flex-end; }
   .tbl-stack td[colspan] { grid-column: 1 / -1; }
   /* 交易表「点股票行展开」的明细行：整行铺满，内部仍走自己的横向滚动 */
   .tbl-stack .stock-detail-row { display: block; padding: 0; border-bottom: 0; }
-  .tbl-stack .stock-detail-row > td { display: block; padding: 10px 14px; }
+  .tbl-stack .stock-detail-row > td { display: block; padding: 12px 16px; }
 
   /* 仍然会横滑的表（用户管理）：左右两端渐隐阴影，滑到尽头自动消失。
      只挂 .scroll-hint，别再让堆叠表也长出阴影（它已经没有横向溢出）。 */
@@ -2198,9 +2201,9 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 /* 实测 12 个可点元素里 7 个低于 44px，「＋ 记一笔」只有 20px 高。
    下文取 40px 作为下限（表格行内的按钮仍走 .icon-btn，不在此列）。 */
 @media (max-width: 640px) {
-  .link-btn { min-height: 40px; padding: 10px 2px; margin-top: 0; }
-  .ctr-actions .link-btn { padding: 10px 2px; }
-  .fchip, .wtab { min-height: 36px; padding: 8px 14px; }
+  .link-btn { min-height: 40px; padding: 12px 2px; margin-top: 0; }
+  .ctr-actions .link-btn { padding: 12px 2px; }
+  .fchip, .wtab { min-height: 36px; padding: 8px 16px; }
   .set-tab { min-height: 40px; }
   .btn.sm { min-height: 34px; }
   .qa-tool-btn { width: 40px; height: 40px; }
@@ -2209,7 +2212,7 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 }
 
 /* ---------- R5 空状态：统一文案位置与语气 ---------- */
-.empty { padding: 28px 12px; line-height: 1.7; }
+.empty { padding: 28px 12px; line-height: 1.75; }
 
 /* 问答右栏「本会话提问」空态：原来复用 .qa-jump-item 的按钮样式，看着像一条不能点的按钮 */
 .qa-jump-empty {
@@ -2236,16 +2239,16 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
    内联样式无法被主题接管、也无法统一调整，这里收成一组最小工具类，
    只保留确实需要的十来条；新代码优先用组件类，别再加内联。
    ============================================================ */
-.mt-4 { margin-top: 4px; } .mt-6 { margin-top: 6px; } .mt-8 { margin-top: 8px; }
-.mt-10 { margin-top: 10px; } .mt-12 { margin-top: 12px; } .mt-14 { margin-top: 14px; }
+.mt-4 { margin-top: 4px; } .mt-6 { margin-top: 8px; } .mt-8 { margin-top: 8px; }
+.mt-10 { margin-top: 12px; } .mt-12 { margin-top: 12px; } .mt-14 { margin-top: 16px; }
 .mb-8 { margin-bottom: 8px; } .mb-0 { margin-bottom: 0; } .m-0 { margin: 0; }
-.my-6 { margin: 6px 0; } .my-4b10 { margin: 4px 0 10px; }
+.my-6 { margin: 8px 0; } .my-4b10 { margin: 4px 0 12px; }
 .d-flex { display: flex; } .d-none { display: none; }
 .inline-center { display: inline-flex; align-items: center; }
 .v-center { align-items: center; }
 .wrap { flex-wrap: wrap; } .basis-full { flex-basis: 100%; }
 .flex-1 { flex: 1; } .flex-2 { flex: 2; }
-.gap-5 { gap: 5px; } .gap-6 { gap: 6px; }
+.gap-5 { gap: 4px; } .gap-6 { gap: 8px; }
 .pointer { cursor: pointer; }
 .fs-14 { font-size: 14px; }
 .w-110 { width: 110px; }
@@ -2256,18 +2259,18 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
 /* ---------- R7 长说明折叠 ---------- */
 /* 卡片底部动辄 3-5 行 11-12px 灰字（动量口径、热度取数说明），实测没人读，
    却把「主操作」挤到折线以下。收进 details：默认只留一行可点标题。 */
-.note-fold { margin: 8px 0 6px; }
+.note-fold { margin: 8px 0 8px; }
 .note-fold > summary,
 details.hh-foot > summary {
   cursor: pointer; font-size: 12px; color: var(--ink-3);
-  padding: 3px 0; line-height: 1.6; list-style-position: inside;
+  padding: 4px 0; line-height: 1.6; list-style-position: inside;
 }
 .note-fold > summary:hover,
 details.hh-foot > summary:hover { color: var(--blue); }
 .note-fold[open] > summary,
 details.hh-foot[open] > summary { color: var(--ink-2); margin-bottom: 2px; }
 .note-fold p {
-  margin: 6px 0 0; font-size: 12px; line-height: 1.85; color: var(--ink-2);
+  margin: 8px 0 0; font-size: 12px; line-height: 1.75; color: var(--ink-2);
 }
 .note-fold b { color: var(--ink); }
 /* 动量筛选的数字输入框：原来作为 flex 子项被压扁，五个框宽度参差（44/50/48/32/35） */
@@ -2276,3 +2279,45 @@ details.hh-foot[open] > summary { color: var(--ink-2); margin-bottom: 2px; }
 /* 图标精灵容器：不能用 display:none —— 部分浏览器（旧 Safari）对 display:none
    的 <symbol> 不渲染，改用「零尺寸 + 绝对定位」，肉眼不可见但仍在渲染树里。 */
 .icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+
+/* ============================================================
+   v3.22.0 UI 军规收口（间距刻度 / 圆角 / 字重 / 行高 / 阴影 / 动效）
+   ============================================================ */
+
+/* --- I5 动效三处 --- */
+/* ① 主操作反馈：按下即沉（120ms 内回弹，无需 JS） */
+.btn, .link-btn, .set-tab, .fchip, .qa-tool-btn { transition: transform .12s ease, background-color .15s ease, border-color .15s ease, color .15s ease; }
+.btn:active, .qa-tool-btn:active { transform: translateY(1px) scale(.985); }
+.link-btn:active, .fchip:active { transform: scale(.97); }
+/* ② 首次出场 + 视图切换来路：淡入上移 6px（240ms，短促不抢戏） */
+@keyframes viewIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.view.active { animation: viewIn .24s ease; }
+/* ③ 状态切换的来路已有：问答右栏滑出面板 transform .22s、toast 出场。
+   减少动态效果偏好下全部直落到位 */
+@media (prefers-reduced-motion: reduce) {
+  .view.active { animation: none; }
+  .btn:active, .qa-tool-btn:active, .link-btn:active, .fchip:active { transform: none; }
+  .btn, .link-btn, .set-tab, .fchip, .qa-tool-btn { transition: none; }
+}
+
+/* --- B6 破坏性操作降级：常驻列表里的删除类按钮不再是高饱和实心红，
+       只留红字提示；确认弹窗内仍用实心红（那是当前主任务） --- */
+.btn.ghost.danger { color: var(--up); border-color: var(--line); background: transparent; }
+.btn.ghost.danger:hover { border-color: var(--up); background: var(--up-bg); }
+
+
+/* --- v3.22.0 独立评审落地 --- */
+/* 评审#2 热度页：板块表行距 12→14、指标卡内距 12→16（组内收紧原则下
+   这块是「数字主角」区，需要比周边更松）；北证小字 11→12 解除双重削弱 */
+.hh-tbl td { padding: 16px 12px; }
+.hh-card { padding: 16px; }
+.hh-bse { font-size: 12px; }
+
+
+/* --- v3.22.0 独立评审落地 --- */
+/* 评审#2 热度页：板块表行距 12→14、指标卡内距 12→16（组内收紧原则下
+   这块是「数字主角」区，需要比周边更松）；北证小字 11→12 解除双重削弱 */
+.hh-tbl td { padding: 14px 12px; }
+.hh-card { padding: 16px; }
+.hh-bse { font-size: 12px; }
