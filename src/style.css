@@ -1677,9 +1677,13 @@ select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px v
    用户反馈「百分比和数值看着感觉有差异」。改为 font-size: inherit —— 涨跌额与
    同一胶囊内的名称/点位/百分比恒等字号，容器换档（如以后调 .idx-bar-lg）也自动跟随，
    不会再出现「改一处漏一处」的错配。
-   注：涨跌额只在窄屏渲染（见 app.js 的 idxNarrow），宽屏下这枚 span 根本不存在，
-   所以这条规则在 PC 端是空转，不影响 6 枚一行。 */
-#tvIdxBar .idx-chip .i-chg { font-size: inherit; font-variant-numeric: tabular-nums; }
+   注（v3.21.3 更新）：涨跌额原先只在窄屏渲染（idxNarrow 门控），现已全宽度输出，
+   宽屏这条规则不再空转。为保证同一行各枚的百分比起点对齐，给 .i-chg 定宽 3.8em
+   右对齐（tabular-nums 下 em 与字号成正比，改字号时对齐关系自动保持）。 */
+#tvIdxBar .idx-chip .i-chg {
+  display: inline-block; min-width: 3.8em; text-align: right;
+  font-size: inherit; font-variant-numeric: tabular-nums;
+}
 /* 涨跌额跟随涨跌着色（与 .i-val / .i-pct 同一套红涨绿跌） */
 #tvIdxBar .idx-chip.up .i-chg { color: var(--up); }
 #tvIdxBar .idx-chip.down .i-chg { color: var(--down); }

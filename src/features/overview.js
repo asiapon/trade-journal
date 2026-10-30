@@ -154,18 +154,24 @@ export function renderHoldings() {
      v3.8.70 涨跌额改为**并入百分比括号内**（-0.74%(-28.19)）：原先它是第 4 枚
      独立 span（.i-chg），自带 5.5em 定宽右对齐，实测在百分比后隔出 35.8px 空隙，
      用户反馈「中间隔的空太多」。合并后不再需要独立列，定宽与空隙一并消失。
-     括号段字号比主数值小一档（12px）、跟随涨跌着色，保持「补充信息」的主次。
-     仍在窄屏才加：PC 端一行排 6 枚，多一段数值会把它们挤到换行。 */
-  const idxNarrow = window.matchMedia('(max-width: 720px)').matches;
+     v3.21.3 全宽度统一显示涨跌额，顺序改为「点位 → 涨跌额 → 涨跌幅」
+     （原为「点位 → 百分比(涨跌额)」，且只在 max-width:720px 下渲染）：
+     用户对比本机与 Cloudflare 部署时，发现同一份代码在宽屏只剩指数与百分比，
+     以为两端功能不一致 —— 实为窄屏门控导致的观感差异，两处跑的是同一份构建。
+     行情软件的常规读法是「跌 28.19 点，跌 0.74%」，所以金额在百分比之前，
+     去掉括号改独立字段（.i-chg 定宽右对齐，各枚百分比起点仍对齐）。
+     宽度核算（13px，tabular-nums）：名称 4.5em + 点位 4.9em + 涨跌额 3.8em
+     + 百分比约 3.7em + 3 个 8px gap + 28px 内距 ≈ 274px，
+     仍小于 .idx-bar-eq 的 280px 最小列宽，6 枚在 1440 下是 4+2 两行、不溢出不折行。 */
   const idxItems = NetQuote.INDEXES.map(ix => {
     const q = NetQuote.idx.get(ix.sym);
     if (!q || !(q.price > 0)) return '';
     const cls = q.pct >= 0 ? 'up' : 'down';
     const sign = q.pct >= 0 ? '+' : '';
-    /* v3.8.70 涨跌额并进百分比（括号形式）；涨跌额缺失（个别源不返回）时只显示百分比 */
-    const chgTxt = (idxNarrow && q.chg != null && !isNaN(q.chg))
-      ? `<span class="i-chg">(${q.chg >= 0 ? '+' : ''}${fmt2(q.chg)})</span>` : '';
-    return `<span class="idx-chip ${cls}"><span class="i-name">${esc(q.name || ix.name)}</span><span class="i-val">${fmt2(q.price)}</span><span class="i-pct">${sign}${q.pct.toFixed(2)}%</span>${chgTxt}</span>`;
+    /* 涨跌额缺失（个别源不返回 f4/p[31]）时只显示点位与百分比，不留空位 */
+    const chgTxt = (q.chg != null && !isNaN(q.chg))
+      ? `<span class="i-chg">${q.chg >= 0 ? '+' : ''}${fmt2(q.chg)}</span>` : '';
+    return `<span class="idx-chip ${cls}"><span class="i-name">${esc(q.name || ix.name)}</span><span class="i-val">${fmt2(q.price)}</span>${chgTxt}<span class="i-pct">${sign}${q.pct.toFixed(2)}%</span></span>`;
   }).join('');
   ['tvIdxBar'].forEach(id => {
     const el = document.getElementById(id); if (!el) return;
