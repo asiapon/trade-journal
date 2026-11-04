@@ -68,59 +68,10 @@ export function buildTradeRow({ type, code, name, market, price, qty, time, note
 
 /* ============================================================
    持仓引擎：移动加权平均（统计权威）+ 摊薄成本（展示）
+   v3.22.1 实现移至 src/core/holdings.js（纯模块、可单测），
+   此处 re-export 保持既有 import 路径不变。
    ============================================================ */
-export function computeHoldings() {
-  const map = new Map();
-  const sorted = [...S.trades].sort((a, b) => new Date(a.transaction_time) - new Date(b.transaction_time));
-  /* v3.8.56 当日配对池：卖出时优先用「同日买入」的成本配对，剩余部分才回落到历史持仓成本。
-     目的：做 T（当日买、当日卖）时「已实现盈亏」反映这一手操作的真实收益，
-     而不是拿隔夜老仓的高成本去比（那会得出与直觉相反的巨额亏损）。
-     dayKey = 本地交易日 YYYY-MM-DD，日切时重置池。 */
-  let dayKey = '', dayQty = 0, dayCost = 0;
-  for (const t of sorted) {
-    const k = t.stock_code;
-    if (!map.has(k)) map.set(k, { code: k, name: t.stock_name || '', market: t.market, qty: 0, costValue: 0, dilutedValue: 0, realized: 0, realizedOp: 0, timeline: [] });
-    const h = map.get(k);
-    if (t.stock_name) h.name = t.stock_name;
-    if (t.market) h.market = t.market;
-    const feeTotal = (t.fee && t.fee.total) || 0;
-    const net = t.net_amount != null ? Number(t.net_amount) : t.gross_amount - feeTotal;
-    /* 日切：换了一天就清空配对池（按该笔自身的交易日期） */
-    const d = new Date(t.transaction_time);
-    const tKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    if (tKey !== dayKey) { dayKey = tKey; dayQty = 0; dayCost = 0; }
-    if (t.transaction_type === 'buy') {
-      h.qty += t.quantity;
-      h.costValue += t.gross_amount + feeTotal;      // 加权：费用计入成本
-      h.dilutedValue += t.gross_amount + feeTotal;
-      dayQty += t.quantity; dayCost += t.gross_amount + feeTotal;
-      h.timeline.push({ t, avg: h.qty ? h.costValue / h.qty : 0, realized: null, realizedOp: null });
-    } else {
-      const avg = h.qty ? h.costValue / h.qty : 0;
-      const pnl = net - t.quantity * avg;            // 整轮口径：这笔卖 vs 持仓加权成本
-      h.realized += pnl;
-      /* 当笔口径：先用当日买入池配对，剩余部分再用历史加权成本 */
-      let pnlOp;
-      if (dayQty > 0) {
-        const useQty = Math.min(t.quantity, dayQty);
-        const avgDay = dayCost / dayQty;
-        pnlOp = useQty * ((net / t.quantity) - avgDay); // 配对部分：卖出净价 − 当日买入成本
-        dayCost -= useQty * avgDay; dayQty -= useQty;
-        const rest = t.quantity - useQty;
-        if (rest > 0) pnlOp += rest * ((net / t.quantity) - avg);
-      } else {
-        pnlOp = pnl;
-      }
-      h.realizedOp += pnlOp;
-      h.costValue -= t.quantity * avg;
-      h.dilutedValue -= net;                          // 摊薄：盈亏滚入
-      h.qty -= t.quantity;
-      if (h.qty <= 0.0001) { h.qty = 0; h.costValue = 0; h.dilutedValue = 0; }
-      h.timeline.push({ t, avg, realized: pnl, realizedOp: pnlOp });
-    }
-  }
-  return [...map.values()];
-}
+export { computeHoldings } from '../core/holdings.js';
 export function quoteMap() {
   return NetQuote.map;   // 统一走网络行情（腾讯公开接口），不再读手填价格表
 }

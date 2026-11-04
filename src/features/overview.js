@@ -66,13 +66,18 @@ export function renderHoldings() {
      净额含费用；期初持仓 = 期末 + 今日卖出 − 今日买入。对「今日买今日卖」做 T 与「今日清仓」均成立。
      v3.8.55 修复：只要拿得到「现价 + 昨收」，没有今日交易也应当能算出当日盈亏
      （= 期末持仓 × 现价 − 期末持仓 × 昨收），此前 `if (!tt.length) return null` 把
-     无交易的日子一律判成「未获取」，所以老基线持仓永远看不到当日盈亏。 */
+     无交易的日子一律判成「未获取」，所以老基线持仓永远看不到当日盈亏。
+     v3.22.1 返回值改为 { pnl, base }：base 是「当日盈亏率」的分母
+     （期初市值 + 当日买入投入）。此前表格列「当日盈亏%」直接用个股涨跌幅
+     (price−prevClose)/prevClose，与旁边按持仓数量算的「当日盈亏」金额口径脱节——
+     轻仓股涨 5% 对账户几乎无感，却显示 +5.00%。现改为 pnl/base：
+     无今日交易时退化为 (现价−昨收)/昨收（与个股涨跌幅等价，本就应相等）。 */
   function dayPnlOf(code, endQty, price, prevClose) {
     const tt = todayByCode.get(code) || [];
     if (!tt.length) {
       /* 无今日交易：纯隔夜持仓的当日盈亏 = 期末持仓 × (现价 − 昨收) */
       if (price == null || !(prevClose > 0) || endQty <= 0) return null;
-      return endQty * (price - prevClose);
+      return { pnl: endQty * (price - prevClose), base: endQty * prevClose };
     }
     let buyNet = 0, buyQty = 0, sellNet = 0, sellQty = 0;
     for (const t of tt) {
@@ -81,9 +86,12 @@ export function renderHoldings() {
       else { sellQty += t.quantity; sellNet += t.net_amount != null ? Number(t.net_amount) : t.gross_amount - f; }
     }
     const openQty = endQty + sellQty - buyQty;               // 期初（昨收时点）持仓
-    if (!price && openQty <= 0) return sellNet - buyNet;     // 今买今卖全平，无行情也能算
+    if (!price && openQty <= 0) return { pnl: sellNet - buyNet, base: buyNet }; // 今买今卖全平，无行情也能算
     if (price == null || !(prevClose > 0)) return null;      // 隔夜部分缺昨收无法算
-    return sellNet + endQty * price - buyNet - openQty * prevClose;
+    return {
+      pnl: sellNet + endQty * price - buyNet - openQty * prevClose,
+      base: openQty * prevClose + buyNet
+    };
   }
   const rows = holds.map((h, i) => {
     const q = qm.get(h.code);
@@ -94,19 +102,25 @@ export function renderHoldings() {
     const costPrice = h.qty ? h.dilutedValue / h.qty
       : (h.timeline && h.timeline.length ? h.timeline[h.timeline.length - 1].avg : null);
     const mv = !cleared && price != null ? h.qty * price : null;
-    const dayPnl = dayPnlOf(h.code, h.qty, price, prevClose);
+    const dp = dayPnlOf(h.code, h.qty, price, prevClose);
+    const dayPnl = dp ? dp.pnl : null;
+    const dayBase = dp ? dp.base : null;
+    /* 当日盈亏率 = 当日盈亏 / (期初市值 + 当日买入投入)；缺分母时不显示，宁缺勿错 */
+    const dayPct = dp && dp.base > 0 ? dp.pnl / dp.base : null;
     /* 清仓股盈亏列 = 该股全部已实现盈亏（整轮结果，vs 成本）；持仓股 = 摊薄累计盈亏 */
     const float = cleared ? (h.realized || 0) : (price != null ? h.qty * price - h.dilutedValue : null);
     const floatPct = !cleared && price != null && costPrice ? float / h.dilutedValue : null;
-    const dayPct = price != null && prevClose > 0 ? (price - prevClose) / prevClose : null;
-    return { h, cleared, price, prevClose, costPrice, mv, float, floatPct, dayPnl, dayPct, color: WB_COLORS[i % WB_COLORS.length] };
+    return { h, cleared, price, prevClose, costPrice, mv, float, floatPct, dayPnl, dayPct, dayBase, color: WB_COLORS[i % WB_COLORS.length] };
   });
   /* 今日清仓股的落地盈亏（已在 rows 中） */
 
-  /* 持仓统计卡：摊薄口径，与表格行完全一致（浮动盈亏=累计盈亏，当日参考盈亏=券商口径） */
-  let totalMV = 0, totalDayPnl = 0;
+  /* 持仓统计卡：摊薄口径，与表格行完全一致（浮动盈亏=累计盈亏，当日参考盈亏=券商口径）
+     v3.22.1 统计卡「当日盈亏%」分母改为 Σ(期初市值+当日买入投入)（与表格列同一口径），
+     此前用「期末市值−当日盈亏」近似期初，有当日买卖资金流时会偏差 */
+  let totalMV = 0, totalDayPnl = 0, totalDayBase = 0;
   for (const r of rows) {
-    if (r.mv != null) { totalMV += r.mv; if (r.dayPnl != null) totalDayPnl += r.dayPnl; }
+    if (r.mv != null) totalMV += r.mv;
+    if (r.dayPnl != null) { totalDayPnl += r.dayPnl; totalDayBase += (r.dayBase || 0); }
   }
   /* 今日清仓股的已落地盈亏计入当日参考盈亏 */
   totalDayPnl += rows.filter(r => r.cleared).reduce((s, r) => s + (r.dayPnl != null ? r.dayPnl : 0), 0);
@@ -193,7 +207,7 @@ export function renderHoldings() {
      保留 ¥ 反而让三项基线不齐、宽度被撑开。 */
   const tvStatsHtml = statChip('持仓市值', fmt2(totalMV), '', '')
     + statChip('浮动盈亏', sSgn(totalFloat) + fmt2(totalFloat), sCls(totalFloat), sPct(totalFloat, totalMV - totalFloat))
-    + statChip('当日盈亏', sSgn(totalDayPnl) + fmt2(totalDayPnl), sCls(totalDayPnl), sPct(totalDayPnl, totalMV - totalDayPnl))
+    + statChip('当日盈亏', sSgn(totalDayPnl) + fmt2(totalDayPnl), sCls(totalDayPnl), sPct(totalDayPnl, totalDayBase))
     + (missingQty ? `<span class="hold-warn">${missingQty} 只现价未获取</span>` : '');
   const sumHtmlOf = () => (rows.length ? tvStatsHtml : '');
 
