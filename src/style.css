@@ -1432,6 +1432,14 @@ select { padding-right: 8px; background: var(--card); color: var(--ink); }
 
 .hh-detail td { background: var(--field); white-space: normal; }
 
+/* v3.22.3 板块明细全量展开：滚动容器 + 吸顶表头 + 「隐藏涨停」开关 */
+.hh-board-note { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
+.hh-board-note .hh-sort { margin: 0; }
+.hh-board-wrap { max-height: 360px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); }
+.hh-board-wrap thead th { position: sticky; top: 0; background: var(--bg); box-shadow: 0 1px 0 var(--border); }
+.hh-board-wrap.hide-zt tr[data-zt] { display: none; }
+.hh-board-wrap tbody td { border-bottom: 1px solid var(--border); }
+
 .hh-down { color: var(--down); }
 
 .hh-foot { margin-top: 16px; font-size: 12px; color: var(--muted); line-height: 1.75; white-space: normal; }

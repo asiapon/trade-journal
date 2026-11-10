@@ -785,6 +785,32 @@ function heatBoardSorted(boards, key) {
 
 /* ---- 渲染：市场热度 ---- */
 const HEAT_TOP = 15;
+/* v3.22.3 板块明细全量展开：此前点开只给 leaders 前 3 只（几乎都是涨停票，没法买）。
+   现在点开渲染板块全部成分股（members 已按涨跌幅降序），涨停/跌停/疑似停牌打标，
+   并提供「隐藏涨停」开关——热门板块里直接挑还没涨停、来得及上车的票。
+   懒渲染：detail 行初始为空，首次展开才生成表格（大板块几百只也只在点开时才算）。 */
+function boardMemberTable(b) {
+  let ztCount = 0;
+  const rows = b.members.map(q => {
+    const zt = isLimitUp(q), dt = isLimitDown(q);
+    if (zt) ztCount++;
+    const susp = !q.amount && q.price != null && q.prevClose != null && q.price === q.prevClose;
+    const tag = zt ? '<b class="hh-up">涨停</b>'
+      : dt ? '<b class="hh-down">跌停</b>'
+      : susp ? '<span class="hh-cnt">停牌?</span>' : '';
+    return `<tr${zt ? ' data-zt="1"' : ''}>`
+      + `<td>${esc(q.name)}<span class="hh-cnt">${q.code}</span></td>`
+      + `<td class="num">${q.price != null ? Number(q.price).toFixed(2) : '—'}</td>`
+      + `<td class="num ${heatCls(q.pct)}">${heatPctTxt(q.pct)}</td>`
+      + `<td class="num">${q.amount ? q.amount.toFixed(1) + ' 亿' : '—'}</td>`
+      + `<td>${tag}</td></tr>`;
+  }).join('');
+  return `<div class="hh-board-note"><span>共 ${b.members.length} 只 · 按涨幅降序 · 涨停 ${ztCount}</span>`
+    + (ztCount ? `<button class="hh-sort" type="button" data-tgl-zt>隐藏涨停</button>` : '')
+    + `<span class="hh-cnt">找没涨停的低位票从下面挑</span></div>`
+    + `<div class="hh-board-wrap"><table class="hh-tbl"><thead><tr><th>名称</th><th class="num">现价</th><th class="num">涨跌幅</th><th class="num">成交额</th><th>状态</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
 function renderHeatView() {
   const box = document.getElementById('heatBox');
   if (!box) return;
@@ -860,9 +886,7 @@ function renderHeatView() {
             <td class="num">${b.zt ? '<b class="hh-up">' + b.zt + '</b>' : '—'}</td>
             <td class="num">${b.amount.toFixed(0)} 亿</td>
           </tr>
-          <tr class="hh-detail" data-board-detail="${esc(b.name)}" hidden><td colspan="5">
-            ${b.leaders.map(q => `<span class="hh-chip">${esc(q.name)} ${heatPctTxt(q.pct)}</span>`).join('')}
-          </td></tr>`).join('')}
+          <tr class="hh-detail" data-board-detail="${esc(b.name)}" hidden><td colspan="5" class="hh-detail-td"></td></tr>`).join('')}
         </tbody>
       </table>
     </div>
@@ -900,10 +924,25 @@ function renderHeatView() {
       try { heatExportSourceCsv(); } catch (e) { toast('导出失败：' + (e && e.message || e), 'warn'); }
     };
   }
+  /* v3.9.12 点板块行展开明细；v3.22.3 改为首次展开懒渲染全量成分股表 + 「隐藏涨停」开关 */
+  const boardByName = new Map(top.map(b => [b.name, b]));
   box.querySelectorAll('.hh-row').forEach(tr => {
     tr.onclick = () => {
       const d = box.querySelector('.hh-detail[data-board-detail="' + CSS.escape(tr.dataset.board) + '"]');
-      if (d) { d.hidden = !d.hidden; const c = tr.querySelector('.hh-caret'); if (c) c.textContent = d.hidden ? '▸' : '▾'; }
+      if (!d) return;
+      if (!d.dataset.filled) {
+        const b = boardByName.get(tr.dataset.board);
+        /* 挂载点必须是 td：往 tr 上设 innerHTML，<table>/<tr> 会被解析器丢弃 */
+        const mount = d.querySelector('td');
+        if (b && mount) { mount.innerHTML = boardMemberTable(b); d.dataset.filled = '1'; }
+        const tgl = d.querySelector('[data-tgl-zt]');
+        if (tgl) tgl.onclick = () => {
+          const wrap = d.querySelector('.hh-board-wrap');
+          const hide = wrap.classList.toggle('hide-zt');
+          tgl.textContent = hide ? '显示全部' : '隐藏涨停';
+        };
+      }
+      d.hidden = !d.hidden; const c = tr.querySelector('.hh-caret'); if (c) c.textContent = d.hidden ? '▸' : '▾';
     };
   });
 }
