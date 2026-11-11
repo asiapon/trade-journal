@@ -122,8 +122,10 @@ export function renderHoldings() {
     if (r.mv != null) totalMV += r.mv;
     if (r.dayPnl != null) { totalDayPnl += r.dayPnl; totalDayBase += (r.dayBase || 0); }
   }
-  /* 今日清仓股的已落地盈亏计入当日参考盈亏 */
-  totalDayPnl += rows.filter(r => r.cleared).reduce((s, r) => s + (r.dayPnl != null ? r.dayPnl : 0), 0);
+  /* 今日清仓股的已落地盈亏（已在 rows 中、上面循环已计入，v3.22.5 修复重复累加：
+     v3.22.1 把 totalDayPnl 的累加从「嵌在 if (r.mv != null) 里」拆成独立判断后，
+     清仓股（mv=null）在循环中也会被计入，此处再补加一次就翻倍了
+     ——实测表头当日盈亏比各行合计多出清仓股之和（+1,078.31）。 */
   /* v3.8.23 持仓表头三态排序（与自选表一致）：降序→升序→取消，空值恒排最后 */
   if (U.holdSort.key && U.holdSort.dir) {
     const getter = {
