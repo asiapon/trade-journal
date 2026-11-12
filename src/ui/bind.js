@@ -167,81 +167,37 @@ export function bindEvents() {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('watchModal').hidden) closeWatchModal(); });
   }
 
-  /* ---------- v3.23.0 持仓基线维护（v3.23.3 起基线直接存 positions 表 is_base 行） ---------- */
-  function posBaseRowHtml(b) {
-    const today = nowLocalInput().slice(0, 10);
-    const mkt = b.market || '';
-    return `<tr>
-      <td><input class="pb-code" type="text" inputmode="numeric" maxlength="6" placeholder="600519" value="${esc(b.stock_code || '')}"></td>
-      <td><input class="pb-name" type="text" placeholder="名称" value="${esc(b.stock_name || '')}"></td>
-      <td><select class="pb-mkt" title="输完 6 位代码自动判定">
-        <option value="sh"${mkt === 'sh' ? ' selected' : ''}>沪</option>
-        <option value="sz"${mkt !== 'sh' && mkt !== 'bj' ? ' selected' : ''}>深</option>
-        <option value="bj"${mkt === 'bj' ? ' selected' : ''}>北</option>
-      </select></td>
-      <td><input class="pb-qty" type="number" min="1" step="1" placeholder="1000" value="${b.qty != null ? b.qty : ''}"></td>
-      <td><input class="pb-cost" type="number" min="0" step="0.00000001" placeholder="5.71012345" value="${b.costPrice != null ? b.costPrice : ''}"></td>
-      <td><input class="pb-date" type="date" value="${esc(b.base_date || today)}"></td>
-      <td><button class="link-btn pb-del" type="button">删除</button></td>
-    </tr>`;
-  }
-  function renderPosBaseRows() {
-    /* v3.23.3 基线列表 = positions 表的 is_base 行（posBases() 已映射为 {qty, costPrice}） */
-    $('posBaseTable').querySelector('tbody').innerHTML = posBases().map(posBaseRowHtml).join('');
-  }
-  function closePosBaseModal() { $('posBaseModal').hidden = true; }
-  if ($('posBaseBtn')) {
-    $('posBaseBtn').addEventListener('click', () => { renderPosBaseRows(); $('posBaseModal').hidden = false; });
-    $('posBaseClose').addEventListener('click', closePosBaseModal);
-    $('posBaseModal').addEventListener('mousedown', e => { if (e.target === $('posBaseModal')) closePosBaseModal(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('posBaseModal').hidden) closePosBaseModal(); });
-    $('posBaseAdd').addEventListener('click', () => {
-      const tbody = $('posBaseTable').querySelector('tbody');
-      tbody.insertAdjacentHTML('beforeend', posBaseRowHtml({}));
-      tbody.lastElementChild.querySelector('.pb-code').focus();
-    });
-    /* 代码输完 6 位：自动判定市场 + 回填名称（字典里有就填，没有留手填） */
-    $('posBaseTable').addEventListener('focusout', e => {
-      if (!e.target.classList.contains('pb-code')) return;
-      const code = e.target.value.trim();
-      if (!/^\d{6}$/.test(code)) return;
-      const tr = e.target.closest('tr');
-      tr.querySelector('.pb-mkt').value = inferMarket(code);
-      const d = StockDict.d[code];
-      if (d && d.name && !tr.querySelector('.pb-name').value.trim()) tr.querySelector('.pb-name').value = d.name;
-    });
-    $('posBaseTable').addEventListener('click', e => {
-      if (e.target.classList.contains('pb-del')) e.target.closest('tr').remove();
-    });
-    $('posBaseSave').addEventListener('click', async () => {
-      const rows = [...$('posBaseTable').querySelectorAll('tbody tr')].map(tr => ({
-        stock_code: tr.querySelector('.pb-code').value.trim(),
-        stock_name: tr.querySelector('.pb-name').value.trim(),
-        market: tr.querySelector('.pb-mkt').value,
-        qtyRaw: tr.querySelector('.pb-qty').value.trim(),
-        costRaw: tr.querySelector('.pb-cost').value.trim(),
-        base_date: tr.querySelector('.pb-date').value
-      }));
-      const seen = new Set();
-      for (const r of rows) {
-        if (!/^\d{6}$/.test(r.stock_code)) { toast(`代码「${r.stock_code || '空'}」应为 6 位数字`, 'warn'); return; }
-        if (!/^\d+$/.test(r.qtyRaw) || !(Number(r.qtyRaw) > 0)) { toast(`${r.stock_code} 数量应为正整数`, 'warn'); return; }
-        if (r.costRaw === '' || !(Number(r.costRaw) >= 0) || !isFinite(Number(r.costRaw))) { toast(`${r.stock_code} 成本价无效`, 'warn'); return; }
-        if (!/^\d{1,8}(\.\d{1,8})?$/.test(r.costRaw)) { toast(`${r.stock_code} 成本价最多 8 位小数`, 'warn'); return; }
-        if (!r.base_date) { toast(`${r.stock_code} 请选基线日期`, 'warn'); return; }
-        if (seen.has(r.stock_code)) { toast(`股票 ${r.stock_code} 重复，请合并为一行`, 'warn'); return; }
-        seen.add(r.stock_code);
-      }
-      const clean = rows.map(r => ({ stock_code: r.stock_code, stock_name: r.stock_name, market: r.market, qty: Number(r.qtyRaw), costPrice: Number(r.costRaw), base_date: r.base_date }));
-      try {
-        /* v3.23.3 基线直接写 positions 表（is_base 行）：upsert/清退/增量重算一体完成 */
-        await savePosBases(clean);
-        toast(clean.length ? `已保存 ${clean.length} 条持仓基线` : '已清空基线，恢复纯流水推导');
-        closePosBaseModal();
-        renderHoldings(); renderToday();
-      } catch (err) { toast(err.message || '保存失败', 'warn'); }
-    });
-  }
+  /* ---------- v3.23.4 点持仓表「成本价」格直接改成本（「维护持仓」弹窗已下线）
+     修改语义 = 把这只股票的当前数量/成本固化为基线（base_date=当天），
+     之后交易流水照常在其上叠加。其余股票的基线不受影响。 ---------- */
+  document.addEventListener('click', e => {
+    const td = e.target.closest('td.cost-edit');
+    if (!td) return;
+    const code = td.dataset.costCode;
+    const name = td.dataset.costName || code;
+    const cur = td.textContent.trim();
+    /* 当前数量：优取 positions 表行，降级现算 */
+    let qty = 0, market = inferMarket(code);
+    const rec = (S.positionsOk && Array.isArray(S.positions)) ? S.positions.find(r => r.stock_code === code) : null;
+    if (rec) { qty = rec.qty; market = rec.market || market; }
+    else { const h = computePositions(code)[0]; if (h) { qty = h.qty; market = h.market || market; } }
+    if (!(qty > 0)) { toast('该股当前无持仓，无需改成本', 'warn'); return; }
+    promptDlg(
+      `修改成本价 · ${name}`,
+      `当前成本价 ${cur}，当前数量 ${qty}。输入与券商 APP 一致的成本价（最多 8 位小数）。保存后该股持仓成本即固定，之后的交易流水照常自动更新。`,
+      async val => {
+        if (!/^\d{1,8}(\.\d{1,8})?$/.test(val) || !(Number(val) >= 0) || isFinite(Number(val)) === false) { toast('成本价无效（应为非负数，最多 8 位小数）', 'warn'); return; }
+        const bases = posBases().filter(b => b.stock_code !== code);
+        bases.push({ stock_code: code, stock_name: name, market, qty, costPrice: Number(val), base_date: nowLocalInput().slice(0, 10) });
+        try {
+          await savePosBases(bases);
+          toast(`已更新 ${name} 成本价为 ${val}`);
+          renderHoldings(); renderToday();
+        } catch (err) { toast(err.message || '保存失败', 'warn'); }
+      },
+      { placeholder: '如 48.04371926', okText: '保存' }
+    );
+  });
 
   /* AI 模型 */
   $('modelCurSel').addEventListener('change', () => { ModelMgr.setCur($('modelCurSel').value); toast('已切换模型'); });

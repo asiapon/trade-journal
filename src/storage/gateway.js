@@ -241,7 +241,7 @@ async function migratePosBase(legacy) {
   }
 }
 
-/* v3.23.3 保存持仓基线（「维护持仓」弹窗入口）：基线直接写 positions 表，
+/* v3.23.3 保存持仓基线（v3.23.4 起入口 = 点持仓表「成本价」格）：基线直接写 positions 表，
    不再经 settings.pos_base 中转。
    - 表单每行 → upsert is_base=1 行（base_qty/base_cost = 基线点快照）；
    - 表单里删掉的旧基线 → 有流水恢复纯流水推导（is_base 清 0 后增量重算），

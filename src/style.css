@@ -2336,3 +2336,7 @@ details.hh-foot[open] > summary { color: var(--ink-2); margin-bottom: 2px; }
 .hh-tbl td { padding: 14px 12px; }
 .hh-card { padding: 16px; }
 .hh-bse { font-size: 12px; }
+
+/* --- v3.23.4 持仓表成本价格可点击改成本（替代「维护持仓」弹窗） --- */
+td.cost-edit { cursor: pointer; text-decoration: underline dotted rgba(128, 128, 128, .55); text-underline-offset: 4px; }
+td.cost-edit:hover { color: var(--blue); }

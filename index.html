@@ -144,7 +144,7 @@
       <div class="card">
         <div class="card-title-row">
           <span class="card-title">持仓</span>
-          <div class="ctr-actions"><button class="link-btn" id="posBaseBtn" type="button" title="维护持仓基线：存量持仓的数量/成本价修正">维护持仓</button><button class="link-btn" id="holdRecBtn" type="button"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>记一笔</button></div>
+          <div class="ctr-actions"><button class="link-btn" id="holdRecBtn" type="button"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>记一笔</button></div>
         </div>
         <div class="idx-bar idx-bar-lg idx-bar-eq" id="tvHoldSummary"></div>
         <div class="table-scroll">
@@ -872,24 +872,8 @@
   <!-- 模态：加自选（v3.8.78 从「卡片内展开」改为弹窗，与「＋ 记一笔」同一交互模式）
        表单 id 沿用 tvWatchForm/tvWf* —— app.js 里 bindWatchCard 的挂载点不用改，
        只把原来的「展开/收起」换成「开/关弹窗」。 -->
-  <!-- v3.23.0 持仓基线维护：存量持仓（转户老仓/配股送股/券商调成本）的数量与成本价修正 -->
-  <div id="posBaseModal" class="modal-mask" hidden>
-    <div class="modal modal-lg">
-      <div class="modal-title-row">
-        <div class="modal-title">维护持仓</div>
-        <button class="modal-x" id="posBaseClose" type="button" title="关闭">✕</button>
-      </div>
-      <p class="hint">基线 = 「截至基线日期收盘」的真实持仓（数量 + 成本价，成本价可填 8 位小数，与券商 APP 一致）。基线日期<b>之后</b>的交易流水会照常自动更新持仓；当天及更早的流水不再参与持仓推导，但历史统计仍以流水为准。当日清仓的股票当天仍显示在持仓表。不填基线的股票完全按流水推导。</p>
-      <div class="table-scroll"><table class="tbl" id="posBaseTable">
-        <thead><tr><th>代码</th><th>名称</th><th>市场</th><th class="num">数量</th><th class="num">成本价</th><th>基线日期</th><th></th></tr></thead>
-        <tbody></tbody>
-      </table></div>
-      <div class="modal-actions mt-14">
-        <button class="btn ghost" id="posBaseAdd" type="button"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>加一行</button>
-        <button class="btn" id="posBaseSave" type="button">保存基线</button>
-      </div>
-    </div>
-  </div>
+  <!-- v3.23.0 持仓基线维护弹窗已下线（v3.23.4）：改成本价直接点持仓表「成本价」格，
+       修改即固化为该股基线（base_date=当天），之后流水照常叠加。 -->
   <div id="watchModal" class="modal-mask" hidden>
     <div class="modal modal-lg">
       <div class="modal-title-row">
