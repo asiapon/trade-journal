@@ -1,5 +1,5 @@
 /* 总览域：今日统计 / 持仓渲染（移动加权平均）（v0.11.0 自单体拆出） */
-import { $, toast, fmt2, fmtP, fmtPct, pnlCls, esc, fmtTime, nowLocalInput, inferMarket, MKT_NAME } from '../shared/utils.js';
+import { $, toast, fmt2, fmtCost, fmtP, fmtPct, pnlCls, esc, fmtTime, nowLocalInput, inferMarket, MKT_NAME } from '../shared/utils.js';
 import { NetLog, sjTokenHeaders } from '../core/netlog.js';
 import { StockDict } from '../core/stockdict.js';
 import { DL } from '../core/data-layer.js';
@@ -7,7 +7,7 @@ import { emQuote, txQuote } from '../sources/quotes.js';
 import { TABLES, BACKEND_URL, RPC_BASE, ACCESS_KEY, CLOUD_HOST, rpc, cloudStore, localStore, setStore, loadAll, saveSetting, sessionHooks, storageHooks } from '../storage/gateway.js';
 import { S } from '../core/app-state.js';
 import { U } from '../core/ui-state.js';
-import { computeHoldings, quoteMap } from './journal.js';
+import { computeHoldings, computePositions, quoteMap } from './journal.js';
 import { NetQuote } from './quotes.js';
 import { updateSortHead } from './watchlist.js';
 
@@ -47,7 +47,10 @@ export const WATCH_MOUNTS = [
     toggle: 'tvWatchAddBtn' },   /* v3.8.78 标题行「＋ 加自选」= 开弹窗入口（原折叠开关） */
 ];
 export function renderHoldings() {
-  const all = computeHoldings();
+  /* v3.23.0 持仓展示改吃「基线层」computePositions：无基线时与纯流水完全一致，
+     有基线时 = 基线（截至基线日期收盘的真实持仓）+ 之后的流水增量。
+     历史统计（按股票统计/当笔盈亏/今日已实现）仍走 computeHoldings() 纯流水。 */
+  const all = computePositions();
   const qm = quoteMap();
   const NA = '<span class="na-tag">未获取</span>';
 
@@ -224,12 +227,12 @@ export function renderHoldings() {
   const pcHtml = rows.map(r => {
     const { h, price, costPrice, mv, float, floatPct, dayPnl, dayPct } = r;
     return `<tr data-code="${esc(h.code)}">
-      <td class="cell-title"><div class="stock-cell"><span class="sc-name">${esc(h.name || h.code)}${r.cleared ? ' <span class="tag cleared">已清仓</span>' : ''}</span><span class="sc-code">${esc(h.code)}</span></div></td>
+      <td class="cell-title"><div class="stock-cell"><span class="sc-name">${esc(h.name || h.code)}${r.cleared ? ' <span class="tag cleared">已清仓</span>' : ''}${h.isBase ? ' <span class="tag basetag" title="数量/成本来自持仓基线（点「维护持仓」可改），基线日期之后的流水已自动叠加">基线</span>' : ''}</span><span class="sc-code">${esc(h.code)}</span></div></td>
       <td class="num" data-label="市值">${mv != null ? fmt2(mv) : NA}</td>
       <td class="num ${float != null ? pnlCls(float) : ''}" data-label="盈亏">${float != null ? (float >= 0 ? '+' : '') + fmt2(float) : NA}</td>
       <td class="num ${floatPct != null ? pnlCls(floatPct) : ''}" data-label="盈亏%">${floatPct != null ? fmtPct(floatPct) : NA}</td>
       <td class="num" data-label="数量">${h.qty}</td>
-      <td class="num" data-label="成本价">${costPrice != null ? fmtP(costPrice) : '—'}</td>
+      <td class="num" data-label="成本价">${costPrice != null ? fmtCost(costPrice) : '—'}</td>
       <td class="num price-cell" data-label="现价">${price != null ? fmt2(price) : NA}</td>
       <td class="num ${dayPnl != null ? pnlCls(dayPnl) : ''}" data-label="当日盈亏">${dayPnl != null ? (dayPnl >= 0 ? '+' : '') + fmt2(dayPnl) : NA}</td>
       <td class="num ${dayPct != null ? pnlCls(dayPct) : ''}" data-label="当日盈亏%">${dayPct != null ? fmtPct(dayPct) : NA}</td>

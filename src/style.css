@@ -866,6 +866,13 @@ input, select, textarea { font-family: inherit; font-size: 14px; color: var(--in
 /* ---------- v3.4.7 今日清仓股保留在持仓表 ---------- */
 .tag.cleared { background: var(--bg); color: var(--ink-3); font-weight: 400; }
 
+/* ---------- v3.23.0 持仓基线：行标记 + 维护弹窗 ---------- */
+.tag.basetag { background: var(--blue-bg); color: var(--blue); font-weight: 400; }
+#posBaseTable input, #posBaseTable select { width: 100%; min-width: 0; }
+#posBaseTable .pb-code { width: 88px; }
+#posBaseTable .pb-qty { width: 92px; }
+#posBaseTable .pb-cost { width: 128px; font-variant-numeric: tabular-nums; }
+
 /* ---------- v3.4.5 按股票视图展开明细 ---------- */
 tr.stockagg { cursor: pointer; }
 tr.stockagg:hover td { background: var(--bg); }

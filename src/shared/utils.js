@@ -17,6 +17,11 @@ export function fmt2(n) { return n == null || isNaN(n) ? '—' : Number(n).toLoc
    影响：持仓表成本价、展开区「成本」胶囊、自选锚点价、交易价格文案 —— 均为价格语义，口径统一。 */
 export function fmtP(n) { return n == null || isNaN(n) ? '—' : Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }); }
 export function fmtPct(n) { return (n > 0 ? '+' : '') + (n * 100).toFixed(2) + '%'; }
+/* 成本价格式化：最多 8 位小数（与券商 APP 成本价精度对齐），尾部零裁掉、至少 2 位 */
+export function fmtCost(n) {
+  if (n == null || isNaN(n)) return '—';
+  return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 8 });
+}
 export function pnlCls(n) { return n > 0 ? 'pos' : n < 0 ? 'neg' : 'neu'; }
 export function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 export function fmtTime(ts, withYear) {

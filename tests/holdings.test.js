@@ -83,3 +83,67 @@ describe('computeHoldings 当日配对池（v3.22.1 跨股票隔离修复）', (
     expect(b.costValue).toBeCloseTo(38.30 * 500, 2);
   });
 });
+
+/* ============================================================
+   v3.23.0 持仓基线层 computePositions
+   ============================================================ */
+import { computePositions } from '../src/core/holdings.js';
+
+describe('computePositions 持仓基线层（v3.23.0）', () => {
+  beforeEach(() => { S.settings = {}; });
+
+  it('无基线时与纯流水 computeHoldings 完全一致', () => {
+    S.trades = [tr('buy', '600001', 10.00, 1000, '2026-11-01T10:00:00')];
+    const a = computeHoldings().find(x => x.code === '600001');
+    const b = computePositions().find(x => x.code === '600001');
+    expect(b.qty).toBe(a.qty);
+    expect(b.costValue).toBeCloseTo(a.costValue, 6);
+  });
+
+  it('基线种子：数量+成本价（8 位小数精度完整保留）', () => {
+    S.settings = { pos_base: [{ stock_code: '600001', stock_name: '测试甲', market: 'sh', qty: 1000, costPrice: 5.71012345, base_date: '2026-11-10' }] };
+    const h = computePositions().find(x => x.code === '600001');
+    expect(h.qty).toBe(1000);
+    expect(h.costValue / h.qty).toBeCloseTo(5.71012345, 10);   // 不做 2 位截断
+    expect(h.isBase).toBe(true);
+  });
+
+  it('基线日期当天及更早的流水被忽略，之后的流水自动叠加', () => {
+    S.settings = { pos_base: [{ stock_code: '600001', stock_name: '测试甲', market: 'sh', qty: 1000, costPrice: 5.71012345, base_date: '2026-11-10' }] };
+    S.trades = [
+      tr('buy', '600001', 99.00, 5000, '2026-11-09T10:00:00'),  // 基线前的历史流水：不参与
+      tr('buy', '600001', 6.00, 500, '2026-11-11T10:00:00'),    // 基线后：加权叠加
+    ];
+    const h = computePositions().find(x => x.code === '600001');
+    expect(h.qty).toBe(1500);
+    expect(h.costValue).toBeCloseTo(1000 * 5.71012345 + 500 * 6.00, 6);
+    // 卖出与当日买入同天 → 先走当日买入池配对：300×(6.50−6.00) = +150
+    S.trades.push(tr('sell', '600001', 6.50, 300, '2026-11-11T14:00:00'));
+    const h2 = computePositions().find(x => x.code === '600001');
+    const sellEv = h2.timeline.filter(e => e.realizedOp != null).pop();
+    expect(sellEv.realizedOp).toBeCloseTo(300 * (6.50 - 6.00), 6);
+  });
+
+  it('基线后全部卖出：qty 归零、盈亏落地；纯流水 computeHoldings 不受基线影响', () => {
+    S.settings = { pos_base: [{ stock_code: '600001', stock_name: '测试甲', market: 'sh', qty: 2000, costPrice: 5.10, base_date: '2026-11-10' }] };
+    S.trades = [
+      tr('buy', '600001', 5.00, 2000, '2026-11-01T10:00:00'),   // 基线前流水
+      tr('sell', '600001', 5.20, 2000, '2026-11-11T14:00:00'),  // 基线后清仓
+    ];
+    const p = computePositions().find(x => x.code === '600001');
+    expect(p.qty).toBe(0);
+    expect(p.realized).toBeCloseTo(2000 * (5.20 - 5.10), 6);    // vs 基线成本
+    const f = computeHoldings().find(x => x.code === '600001'); // 纯流水口径不变
+    expect(f.qty).toBe(0);
+    expect(f.realized).toBeCloseTo(2000 * (5.20 - 5.00), 6);
+  });
+
+  it('只有基线、零流水的股票也出现在持仓里（名称/市场来自基线）', () => {
+    S.settings = { pos_base: [{ stock_code: '688111', stock_name: '新股', market: 'sh', qty: 200, costPrice: 88.88, base_date: '2026-11-11' }] };
+    S.trades = [];
+    const h = computePositions().find(x => x.code === '688111');
+    expect(h).toBeTruthy();
+    expect(h.name).toBe('新股');
+    expect(h.qty).toBe(200);
+  });
+});

@@ -166,6 +166,81 @@ export function bindEvents() {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('watchModal').hidden) closeWatchModal(); });
   }
 
+  /* ---------- v3.23.0 持仓基线维护 ---------- */
+  function posBaseRowHtml(b) {
+    const today = nowLocalInput().slice(0, 10);
+    const mkt = b.market || '';
+    return `<tr>
+      <td><input class="pb-code" type="text" inputmode="numeric" maxlength="6" placeholder="600519" value="${esc(b.stock_code || '')}"></td>
+      <td><input class="pb-name" type="text" placeholder="名称" value="${esc(b.stock_name || '')}"></td>
+      <td><select class="pb-mkt" title="输完 6 位代码自动判定">
+        <option value="sh"${mkt === 'sh' ? ' selected' : ''}>沪</option>
+        <option value="sz"${mkt !== 'sh' && mkt !== 'bj' ? ' selected' : ''}>深</option>
+        <option value="bj"${mkt === 'bj' ? ' selected' : ''}>北</option>
+      </select></td>
+      <td><input class="pb-qty" type="number" min="1" step="1" placeholder="1000" value="${b.qty != null ? b.qty : ''}"></td>
+      <td><input class="pb-cost" type="number" min="0" step="0.00000001" placeholder="5.71012345" value="${b.costPrice != null ? b.costPrice : ''}"></td>
+      <td><input class="pb-date" type="date" value="${esc(b.base_date || today)}"></td>
+      <td><button class="link-btn pb-del" type="button">删除</button></td>
+    </tr>`;
+  }
+  function renderPosBaseRows() {
+    const bases = Array.isArray(S.settings.pos_base) ? S.settings.pos_base : [];
+    $('posBaseTable').querySelector('tbody').innerHTML = bases.map(posBaseRowHtml).join('');
+  }
+  function closePosBaseModal() { $('posBaseModal').hidden = true; }
+  if ($('posBaseBtn')) {
+    $('posBaseBtn').addEventListener('click', () => { renderPosBaseRows(); $('posBaseModal').hidden = false; });
+    $('posBaseClose').addEventListener('click', closePosBaseModal);
+    $('posBaseModal').addEventListener('mousedown', e => { if (e.target === $('posBaseModal')) closePosBaseModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('posBaseModal').hidden) closePosBaseModal(); });
+    $('posBaseAdd').addEventListener('click', () => {
+      const tbody = $('posBaseTable').querySelector('tbody');
+      tbody.insertAdjacentHTML('beforeend', posBaseRowHtml({}));
+      tbody.lastElementChild.querySelector('.pb-code').focus();
+    });
+    /* 代码输完 6 位：自动判定市场 + 回填名称（字典里有就填，没有留手填） */
+    $('posBaseTable').addEventListener('focusout', e => {
+      if (!e.target.classList.contains('pb-code')) return;
+      const code = e.target.value.trim();
+      if (!/^\d{6}$/.test(code)) return;
+      const tr = e.target.closest('tr');
+      tr.querySelector('.pb-mkt').value = inferMarket(code);
+      const d = StockDict.d[code];
+      if (d && d.name && !tr.querySelector('.pb-name').value.trim()) tr.querySelector('.pb-name').value = d.name;
+    });
+    $('posBaseTable').addEventListener('click', e => {
+      if (e.target.classList.contains('pb-del')) e.target.closest('tr').remove();
+    });
+    $('posBaseSave').addEventListener('click', async () => {
+      const rows = [...$('posBaseTable').querySelectorAll('tbody tr')].map(tr => ({
+        stock_code: tr.querySelector('.pb-code').value.trim(),
+        stock_name: tr.querySelector('.pb-name').value.trim(),
+        market: tr.querySelector('.pb-mkt').value,
+        qtyRaw: tr.querySelector('.pb-qty').value.trim(),
+        costRaw: tr.querySelector('.pb-cost').value.trim(),
+        base_date: tr.querySelector('.pb-date').value
+      }));
+      const seen = new Set();
+      for (const r of rows) {
+        if (!/^\d{6}$/.test(r.stock_code)) { toast(`代码「${r.stock_code || '空'}」应为 6 位数字`, 'warn'); return; }
+        if (!/^\d+$/.test(r.qtyRaw) || !(Number(r.qtyRaw) > 0)) { toast(`${r.stock_code} 数量应为正整数`, 'warn'); return; }
+        if (r.costRaw === '' || !(Number(r.costRaw) >= 0) || !isFinite(Number(r.costRaw))) { toast(`${r.stock_code} 成本价无效`, 'warn'); return; }
+        if (!/^\d{1,8}(\.\d{1,8})?$/.test(r.costRaw)) { toast(`${r.stock_code} 成本价最多 8 位小数`, 'warn'); return; }
+        if (!r.base_date) { toast(`${r.stock_code} 请选基线日期`, 'warn'); return; }
+        if (seen.has(r.stock_code)) { toast(`股票 ${r.stock_code} 重复，请合并为一行`, 'warn'); return; }
+        seen.add(r.stock_code);
+      }
+      const clean = rows.map(r => ({ stock_code: r.stock_code, stock_name: r.stock_name, market: r.market, qty: Number(r.qtyRaw), costPrice: Number(r.costRaw), base_date: r.base_date }));
+      try {
+        await saveSetting('pos_base', clean);
+        toast(clean.length ? `已保存 ${clean.length} 条持仓基线` : '已清空基线，恢复纯流水推导');
+        closePosBaseModal();
+        renderHoldings(); renderToday();
+      } catch (err) { toast(err.message || '保存失败', 'warn'); }
+    });
+  }
+
   /* AI 模型 */
   $('modelCurSel').addEventListener('change', () => { ModelMgr.setCur($('modelCurSel').value); toast('已切换模型'); });
   $('modelReloadBtn').addEventListener('click', async () => {

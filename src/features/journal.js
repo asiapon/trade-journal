@@ -73,8 +73,8 @@ export function buildTradeRow({ type, code, name, market, price, qty, time, note
    不会在本模块创建局部绑定，内部调用（renderTrades 按股票分支等）
    会 ReferenceError —— v3.22.1 初版就踩了这个坑，按股票汇聚整页崩。
    ============================================================ */
-import { computeHoldings } from '../core/holdings.js';
-export { computeHoldings };
+import { computeHoldings, computePositions } from '../core/holdings.js';
+export { computeHoldings, computePositions };
 export function quoteMap() {
   return NetQuote.map;   // 统一走网络行情（腾讯公开接口），不再读手填价格表
 }

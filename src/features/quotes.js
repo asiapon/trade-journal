@@ -1,5 +1,6 @@
 /* 行情轮询引擎（NetQuote，含 DataLayer 收口）+ 模型管理器（v0.11.0 自单体拆出） */
 import { $, toast, fmt2, fmtP, fmtPct, pnlCls, esc, fmtTime, nowLocalInput, inferMarket, MKT_NAME } from '../shared/utils.js';
+import { posBases } from '../core/holdings.js';
 import { NetLog, sjTokenHeaders } from '../core/netlog.js';
 import { StockDict } from '../core/stockdict.js';
 import { DL } from '../core/data-layer.js';
@@ -44,6 +45,8 @@ export const NetQuote = {
     const add = (c, m) => { if (c && !mk[c]) { mk[c] = m; codes.push(c); } };
     S.trades.forEach(t => add(t.stock_code, t.market));
     S.watchlist.forEach(w => add(w.stock_code, w.market));
+    /* v3.23.0 只有基线、没有流水的股票也要拉行情（否则持仓表里现价永远「未获取」） */
+    for (const b of posBases()) add(b.stock_code, b.market);
     return { codes, mk };
   },
   /* 东财实时快照（主源）：push2 ulist 批量，JSON 无需转码
