@@ -909,7 +909,7 @@ export function bindEvents() {
             const nBase = Array.isArray(data.holdings)
               ? data.holdings.filter(h => h && h.is_base).length
               : (Array.isArray(data.settings && data.settings.pos_base) ? data.settings.pos_base.length : 0);
-            await store.log('import', `导入备份：交易 ${data.trades.length} 条、自选 ${data.watchlist.length} 条、基线 ${nBase} 条`);
+            await store.log('import', `导入备份：交易 ${data.trades.length} 条、自选 ${data.watchlist.length} 条、存量持仓 ${nBase} 条`);
             await loadAll(); renderAll();
             toast('导入完成');
           } catch (err) { toast(err.message || '导入失败', 'warn'); }

@@ -242,9 +242,9 @@ export function renderHoldings() {
     /* v3.23.4 持仓股的成本价格可点击直接改（替代「维护持仓」弹窗）；清仓股成本已无意义不可改 */
     const costAttrs = r.cleared
       ? ''
-      : ` class="num cost-edit" data-cost-code="${esc(h.code)}" data-cost-name="${esc(h.name || h.code)}" title="点击修改成本价（改后固化为该股基线，之后流水照常叠加）"`;
+      : ` class="num cost-edit" data-cost-code="${esc(h.code)}" data-cost-name="${esc(h.name || h.code)}" title="点击修改成本价"`;
     return `<tr data-code="${esc(h.code)}">
-      <td class="cell-title"><div class="stock-cell"><span class="sc-name">${esc(h.name || h.code)}${r.cleared ? ' <span class="tag cleared">已清仓</span>' : ''}${h.isBase ? ' <span class="tag basetag" title="数量/成本已固化为基线（点成本价格可直接改），基线日期之后的流水已自动叠加">基线</span>' : ''}</span><span class="sc-code">${esc(h.code)}</span></div></td>
+      <td class="cell-title"><div class="stock-cell"><span class="sc-name">${esc(h.name || h.code)}${r.cleared ? ' <span class="tag cleared">已清仓</span>' : ''}</span><span class="sc-code">${esc(h.code)}</span></div></td>
       <td class="num" data-label="市值">${mv != null ? fmt2(mv) : NA}</td>
       <td class="num ${float != null ? pnlCls(float) : ''}" data-label="盈亏">${float != null ? (float >= 0 ? '+' : '') + fmt2(float) : NA}</td>
       <td class="num ${floatPct != null ? pnlCls(floatPct) : ''}" data-label="盈亏%">${floatPct != null ? fmtPct(floatPct) : NA}</td>
