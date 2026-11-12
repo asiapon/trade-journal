@@ -18,9 +18,10 @@ const TABLE_COLS = {
   settings: ['owner_id', 'key', 'value', 'updated_at'],
   op_logs: ['owner_id', 'action', 'summary', 'ref_table', 'created_at'],
   qa_history: ['owner_id', 'conversation_id', 'question', 'answer', 'created_at'],
+  positions: ['owner_id', 'stock_code', 'stock_name', 'market', 'qty', 'cost_price', 'cost_value', 'diluted_cost', 'realized', 'realized_op', 'is_base', 'base_date', 'updated_at'],
 };
-const QUERY_TABLES = ['trades', 'watchlist', 'quotes', 'settings', 'op_logs', 'qa_history'];
-const WRITE_TABLES = ['trades', 'watchlist', 'quotes', 'settings', 'op_logs'];          // app_update/bulk 口径（PG 版就不含 qa_history）
+const QUERY_TABLES = ['trades', 'watchlist', 'quotes', 'settings', 'op_logs', 'qa_history', 'positions'];
+const WRITE_TABLES = ['trades', 'watchlist', 'quotes', 'settings', 'op_logs', 'positions'];          // app_update/bulk 口径（PG 版就不含 qa_history）
 const BOOL_COLS = new Set(['starred', 'must_change_pwd']);
 const JSON_COLS = new Set(['fee', 'value', 'bars']);
 /* PG 版 created_at 一律服务端 now()（app_insert 显式剥掉客户端传的 created_at） */
@@ -319,7 +320,7 @@ FN.app_bulk_delete = async (db, p) => {
   const uname = await sessionUser(db, p.p_token);
   if (!uname) return bad('未登录或会话已过期');
   const want = Array.isArray(p.p_tables) ? p.p_tables.map(String) : [];
-  for (const t of ['trades', 'watchlist', 'quotes', 'op_logs']) {
+  for (const t of ['trades', 'watchlist', 'quotes', 'op_logs', 'positions']) {
     if (want.includes(t)) await db.prepare(`DELETE FROM ${t} WHERE owner_id = ?`).bind(uname).run();
   }
   return ok();

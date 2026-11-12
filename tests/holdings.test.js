@@ -147,3 +147,54 @@ describe('computePositions 持仓基线层（v3.23.0）', () => {
     expect(h.qty).toBe(200);
   });
 });
+
+/* ============================================================
+   v3.23.2 positions 表：单股重放 / 行映射 / 差异比较
+   ============================================================ */
+import { positionRowOf, positionNeedsUpdate } from '../src/core/holdings.js';
+
+describe('positions 表同步（v3.23.2）', () => {
+  beforeEach(() => { S.settings = {}; });
+
+  it('computePositions(code) 单股重放 = 全量结果里过滤出该股', () => {
+    S.trades = [
+      tr('buy', '600001', 10.00, 1000, '2026-11-01T10:00:00'),
+      tr('buy', '000063', 28.00, 1000, '2026-11-02T10:00:00'),
+      tr('sell', '600001', 10.50, 300, '2026-11-03T10:00:00')
+    ];
+    const single = computePositions('600001');
+    expect(single.length).toBe(1);
+    const full = computePositions().find(x => x.code === '600001');
+    expect(single[0].qty).toBe(full.qty);
+    expect(single[0].costValue).toBeCloseTo(full.costValue, 8);
+    expect(single[0].realized).toBeCloseTo(full.realized, 8);
+  });
+
+  it('positionRowOf：持仓股 cost_price=摊薄成本（8 位精度完整），清仓股=最后加权成本', () => {
+    S.trades = [tr('buy', '600001', 5.710123456, 1000, '2026-11-01T10:00:00')];
+    let h = computePositions('600001')[0];
+    let row = positionRowOf(h);
+    expect(row.qty).toBe(1000);
+    expect(row.cost_price).toBeCloseTo(5.710123456, 10);   // 不截断
+    expect(row.is_base).toBe(0);
+    // 清仓后
+    S.trades.push(tr('sell', '600001', 6.00, 1000, '2026-11-02T10:00:00'));
+    h = computePositions('600001')[0];
+    row = positionRowOf(h);
+    expect(row.qty).toBe(0);
+    expect(row.cost_price).toBeCloseTo(5.710123456, 10);   // 最后加权成本保留
+    expect(row.realized).toBeCloseTo(1000 * (6.00 - 5.710123456), 6);
+  });
+
+  it('positionNeedsUpdate：数量/成本/基线变化检出，容差内浮点忽略，id/时间戳不参与', () => {
+    const rec = { stock_code: '600001', stock_name: '甲', market: 'sh', qty: 1000, cost_price: 5.71, cost_value: 5710, diluted_cost: 5710, realized: 0, realized_op: 0, is_base: 0, base_date: null };
+    const row = { id: 7, owner_id: 'admin', updated_at: 'x', ...rec };
+    expect(positionNeedsUpdate(row, rec)).toBe(false);          // 完全一致
+    expect(positionNeedsUpdate({ ...row, qty: 999 }, rec)).toBe(true);
+    expect(positionNeedsUpdate({ ...row, cost_price: 5.71 + 1e-6 }, rec)).toBe(true);
+    expect(positionNeedsUpdate({ ...row, cost_price: 5.71 + 1e-9 }, rec)).toBe(false);  // 容差内
+    expect(positionNeedsUpdate({ ...row, is_base: 1, base_date: '2026-11-10' }, rec)).toBe(true);
+    expect(positionNeedsUpdate({ ...row, stock_name: '乙' }, rec)).toBe(true);
+    expect(positionNeedsUpdate({ ...row, updated_at: 'y' }, rec)).toBe(false);
+  });
+});

@@ -47,10 +47,21 @@ export const WATCH_MOUNTS = [
     toggle: 'tvWatchAddBtn' },   /* v3.8.78 标题行「＋ 加自选」= 开弹窗入口（原折叠开关） */
 ];
 export function renderHoldings() {
-  /* v3.23.0 持仓展示改吃「基线层」computePositions：无基线时与纯流水完全一致，
-     有基线时 = 基线（截至基线日期收盘的真实持仓）+ 之后的流水增量。
+  /* v3.23.2 持仓展示优先读 positions 表（当前持仓的持久化实体，
+     每笔交易/基线变动后增量 upsert）——流水量大时渲染 O(持仓数) 而非全量重放。
+     表不可用（旧后端/同步失败）时回落 computePositions() 现算，数字完全一致。
      历史统计（按股票统计/当笔盈亏/今日已实现）仍走 computeHoldings() 纯流水。 */
-  const all = computePositions();
+  let all;
+  if (S.positionsOk && Array.isArray(S.positions)) {
+    all = S.positions.map(r => ({
+      code: r.stock_code, name: r.stock_name, market: r.market,
+      qty: r.qty, costValue: r.cost_value, dilutedValue: r.diluted_cost,
+      realized: r.realized, realizedOp: r.realized_op,
+      isBase: !!r.is_base, baseDate: r.base_date, lastCostPrice: r.cost_price
+    }));
+  } else {
+    all = computePositions();
+  }
   const qm = quoteMap();
   const NA = '<span class="na-tag">未获取</span>';
 
@@ -101,9 +112,11 @@ export function renderHoldings() {
     const price = q ? q.price : null;
     const prevClose = q ? q.prevClose : null;
     const cleared = h.qty <= 0;                               // 今日清仓：保留展示，盈亏已落地
-    /* 摊薄成本：持仓股=当前摊薄；清仓股=清仓前最后一笔的加权成本（不再平摊，保留作参考） */
+    /* 摊薄成本：持仓股=当前摊薄；清仓股=清仓前最后一笔的加权成本（不再平摊，保留作参考）
+       v3.23.2 表行自带 cost_price（清仓股=最后加权成本），现算路径保留 timeline 回退 */
     const costPrice = h.qty ? h.dilutedValue / h.qty
-      : (h.timeline && h.timeline.length ? h.timeline[h.timeline.length - 1].avg : null);
+      : (h.lastCostPrice != null ? h.lastCostPrice
+        : (h.timeline && h.timeline.length ? h.timeline[h.timeline.length - 1].avg : null));
     const mv = !cleared && price != null ? h.qty * price : null;
     const dp = dayPnlOf(h.code, h.qty, price, prevClose);
     const dayPnl = dp ? dp.pnl : null;

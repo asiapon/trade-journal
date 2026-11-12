@@ -3,6 +3,7 @@
    反向依赖（doLogout/syncGroupList）经 sessionHooks/storageHooks 钩子由 app.js 注入。 */
 import { S } from '../core/app-state.js';
 import { NetLog } from '../core/netlog.js';
+import { computePositions, positionRowOf, positionNeedsUpdate } from '../core/holdings.js';
 
 /* v0.14.0 WorkBuddy 云服务（原生 SDK 接入）
    ------------------------------------------------------------
@@ -53,7 +54,7 @@ export const RPC_BASE = (location.protocol === 'file:')
    原来是更早一版的硬编码值，换应用后一直被服务端按 Origin/Key 拒绝。 */
 export const ACCESS_KEY = CLOUD_CONFIG.publishableKey;
 /* 云端 LLM（免密钥）：模型目录 + 对话调用，与旧版 trade-manager 同一通道 */
-export const TABLES = ['trades', 'watchlist', 'quotes', 'settings', 'op_logs', 'qa_history'];
+export const TABLES = ['trades', 'watchlist', 'quotes', 'settings', 'op_logs', 'qa_history', 'positions'];
 
 /* 会话/装载钩子（app.js 注入，避免存储层反向依赖 UI） */
 export const sessionHooks = { onExpired: null };
@@ -202,7 +203,55 @@ export async function loadAll() {
   S.trades = trades; S.watchlist = watchlist; S.quotes = quotes; S.opLogs = opLogs;
   S.settings = {}; S._settingRows = {};
   for (const s of settings) { S.settings[s.key] = s.value; S._settingRows[s.key] = s; }
+  /* v3.23.2 positions 表：旧 Worker 没有该表白名单时会抛错，降级为渲染层现算 */
+  try {
+    S.positions = await store.query('positions');
+    S.positionsOk = true;
+  } catch (e) {
+    S.positions = []; S.positionsOk = false;
+  }
   if (storageHooks.afterLoad) storageHooks.afterLoad();
+  if (S.positionsOk) await syncPositions();
+}
+
+/* v3.23.2 持仓表同步引擎：positions 是「当前持仓」的持久化实体——
+   每次交易/基线变动后按股票增量重放并 upsert（没有就 INSERT，有就 UPDATE，
+   彻底消失——无流水无基线且非今日清仓——则 DELETE）。
+   codes 传数组 = 只同步这几只（增量，O(该股流水)）；缺省全量校准。
+   同步失败（旧后端无此表）降级：S.positionsOk=false，渲染层回落现算。 */
+export async function syncPositions(codes) {
+  try {
+    /* codes：数组 = 只重放这几只（增量）；空/缺省 = 全量校准 */
+    const all = (Array.isArray(codes) && codes.length)
+      ? codes.flatMap(c => computePositions(c))
+      : computePositions();
+    const cur = Array.isArray(S.positions) ? S.positions : (S.positions = []);
+    const byCode = new Map(cur.map(r => [r.stock_code, r]));
+    const seen = new Set();
+    for (const h of all) {
+      seen.add(h.code);
+      const rec = positionRowOf(h);
+      const row = byCode.get(h.code);
+      if (!row) {
+        const saved = await store.insert('positions', rec);
+        cur.push(saved);
+      } else if (positionNeedsUpdate(row, rec)) {
+        const saved = await store.update('positions', row.id, rec);
+        Object.assign(row, saved);
+      }
+    }
+    if (!codes) {
+      for (const r of [...cur]) {
+        if (!seen.has(r.stock_code)) {
+          await store.remove('positions', r.id);
+          cur.splice(cur.indexOf(r), 1);
+        }
+      }
+    }
+    S.positionsOk = true;
+  } catch (e) {
+    S.positionsOk = false;
+  }
 }
 
 /* 设置项 upsert */

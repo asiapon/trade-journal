@@ -4,13 +4,14 @@ import { NetLog, sjTokenHeaders } from '../core/netlog.js';
 import { StockDict } from '../core/stockdict.js';
 import { DL } from '../core/data-layer.js';
 import { emQuote, txQuote } from '../sources/quotes.js';
-import { ACCESS_KEY, BACKEND_URL, CLOUD_HOST, RPC_BASE, TABLES, cloudStore, loadAll, localStore, rpc, saveSetting, sessionHooks, setStore, storageHooks, store, setupAdmin, changePassword } from '../storage/gateway.js';
+import { ACCESS_KEY, BACKEND_URL, CLOUD_HOST, RPC_BASE, TABLES, cloudStore, loadAll, localStore, rpc, saveSetting, sessionHooks, setStore, storageHooks, store, setupAdmin, changePassword, syncPositions } from '../storage/gateway.js';
 import { S } from '../core/app-state.js';
 import { U } from '../core/ui-state.js';
 import { renderAll } from '../app.js';
 import { doLogin, doLogout, switchAuthForm, authMsg, Auth } from '../features/auth.js';
 import { renderAnalysisSelect } from '../features/diagnose.js';
 import { aiParseEntry, autoWatchOnBuy, buildTradeRow, calcFees, closeRecModal, feeDetailRow, fillFormFromParsed, fillTradeForm, isInitTrade, openRecModal, pendingTrades, quoteMap, reconcileParsedCode, renderTrades, resetTradeForm, resolveTfStock, setManualOpen, setTfStock, syncTfTypeTabs, updateFeePreview } from '../features/journal.js';
+import { computePositions } from '../core/holdings.js';
 import { loadUsers, renderFeeEditor, renderMe, renderNetLogUI, saveFeeEditor, switchSetPane } from '../features/me.js';
 import { HOLD_MOUNTS, WATCH_MOUNTS, feeOpenIds, renderHoldings, renderToday, stockDetailRow, stockOpenCodes } from '../features/overview.js';
 import { qaSyncSendState, renderQaHistory, renderQaMessages } from '../features/qa.js';
@@ -234,6 +235,8 @@ export function bindEvents() {
       const clean = rows.map(r => ({ stock_code: r.stock_code, stock_name: r.stock_name, market: r.market, qty: Number(r.qtyRaw), costPrice: Number(r.costRaw), base_date: r.base_date }));
       try {
         await saveSetting('pos_base', clean);
+        /* v3.23.2 基线变动 → 持仓表同步刷新（受影响的股票增量 upsert） */
+        await syncPositions(clean.map(r => r.stock_code));
         toast(clean.length ? `已保存 ${clean.length} 条持仓基线` : '已清空基线，恢复纯流水推导');
         closePosBaseModal();
         renderHoldings(); renderToday();
@@ -885,9 +888,31 @@ export function bindEvents() {
 
   /* 我的：数据管理 */
   $('exportBtn').addEventListener('click', () => {
+    /* v3.23.2 holdings = positions 表的真实数据（当前持仓的持久化实体）。
+       导入时不直接回写本段——持仓由 trades + settings.pos_base 重新推导后
+       同步入表，保证永远与流水一致；本段用于人看与迁移核对。 */
+    let holdingsSnap;
+    if (S.positionsOk && Array.isArray(S.positions)) {
+      holdingsSnap = S.positions.map(r => ({
+        stock_code: r.stock_code, stock_name: r.stock_name, market: r.market,
+        qty: r.qty,
+        cost_price: r.cost_price != null ? Number(Number(r.cost_price).toFixed(8)) : null,
+        diluted_cost: r.diluted_cost, realized: r.realized, realized_op: r.realized_op,
+        is_base: !!r.is_base, base_date: r.base_date, updated_at: r.updated_at
+      }));
+    } else {
+      holdingsSnap = computePositions().map(h => ({
+        stock_code: h.code, stock_name: h.name, market: h.market,
+        qty: h.qty,
+        cost_price: h.qty > 0 ? Number((h.costValue / h.qty).toFixed(8)) : null,
+        diluted_cost: h.dilutedValue, realized: h.realized, realized_op: h.realizedOp,
+        is_base: !!h.isBase, base_date: h.baseDate || null, updated_at: null
+      }));
+    }
     const data = {
       version: 2, exported_at: new Date().toISOString(), mode: S.mode,
-      trades: S.trades, watchlist: S.watchlist, quotes: S.quotes, settings: S.settings
+      trades: S.trades, watchlist: S.watchlist, quotes: S.quotes, settings: S.settings,
+      holdings: holdingsSnap
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -908,13 +933,17 @@ export function bindEvents() {
         if (!Array.isArray(data.trades) && !Array.isArray(data.watchlist)) { toast('备份文件格式不对', 'warn'); return; }
         confirmDlg('导入备份', `将清空当前全部数据并导入备份（交易 ${data.trades.length} 条、自选 ${data.watchlist.length} 条），确认继续？`, async () => {
           try {
-            await store.clearData(['trades', 'watchlist', 'quotes', 'op_logs']);
+            await store.clearData(['trades', 'watchlist', 'quotes', 'op_logs', 'positions']);
             const strip = arr => (arr || []).map(({ id, owner_id, created_at, ...rest }) => rest);
             await store.bulkInsert('trades', strip(data.trades));
             await store.bulkInsert('watchlist', strip(data.watchlist));
             await store.bulkInsert('quotes', strip(data.quotes));
-            if (data.settings) await saveSetting('fee', data.settings.fee || {});
-            await store.log('import', `导入备份：交易 ${data.trades.length} 条、自选 ${data.watchlist.length} 条`);
+            /* v3.23.1 设置全量恢复（此前只恢复 fee，会丢掉持仓基线/模型配置） */
+            if (data.settings && typeof data.settings === 'object') {
+              for (const [k, v] of Object.entries(data.settings)) await saveSetting(k, v);
+            }
+            const nBase = Array.isArray(data.settings && data.settings.pos_base) ? data.settings.pos_base.length : 0;
+            await store.log('import', `导入备份：交易 ${data.trades.length} 条、自选 ${data.watchlist.length} 条、基线 ${nBase} 条`);
             await loadAll(); renderAll();
             toast('导入完成');
           } catch (err) { toast(err.message || '导入失败', 'warn'); }
@@ -933,7 +962,7 @@ export function bindEvents() {
   });
   $('clearConfirmBtn').addEventListener('click', async () => {
     try {
-      await store.clearData(['trades', 'watchlist', 'quotes', 'op_logs']);
+      await store.clearData(['trades', 'watchlist', 'quotes', 'op_logs', 'positions']);
       await store.log('clear', '清空全部数据（费率保留）');
       $('clearArea').hidden = true;
       $('clearConfirmInput').value = '';

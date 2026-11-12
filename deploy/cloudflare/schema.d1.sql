@@ -124,3 +124,24 @@ CREATE TABLE IF NOT EXISTS net_log (
   src TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_netlog_day ON net_log(day, id);
+
+-- v3.23.2 持仓表（当前持仓的持久化实体）：每笔交易/基线变动后由前端
+-- 增量 upsert（没有就 INSERT，有就 UPDATE）；UI 首屏与导出直接读表，
+-- 不再每次全量重放流水。qty=0 表示已清仓（清仓当日保留展示）。
+CREATE TABLE IF NOT EXISTS positions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_id TEXT NOT NULL,
+  stock_code TEXT NOT NULL,
+  stock_name TEXT,
+  market TEXT NOT NULL DEFAULT 'sh',
+  qty INTEGER NOT NULL DEFAULT 0,
+  cost_price REAL,
+  cost_value REAL,
+  diluted_cost REAL,
+  realized REAL,
+  realized_op REAL,
+  is_base INTEGER NOT NULL DEFAULT 0,
+  base_date TEXT,
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_positions_owner_code ON positions(owner_id, stock_code);

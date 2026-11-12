@@ -101,17 +101,28 @@ export function computeHoldings() {
   return [...map.values()];
 }
 
-/* 基线优先的当前持仓：持仓页/总览页展示用 */
-export function computePositions() {
+/* 基线优先的当前持仓：持仓页/总览页展示用
+   v3.23.2 支持单股重放 computePositions(code)：增量同步 positions 表用，
+   只重放该股流水（通常几十笔），全量重放只留给 boot/导入后的校准。 */
+export function computePositions(code) {
+  const trades = code ? S.trades.filter(t => t.stock_code === code) : S.trades;
   const bases = posBases();
-  if (!bases.length) return computeHoldings();   // 无基线 = 与纯流水完全一致
+  if (!bases.length) {
+    const map = new Map();
+    for (const t of [...trades].sort((a, b) => new Date(a.transaction_time) - new Date(b.transaction_time))) {
+      if (!map.has(t.stock_code)) map.set(t.stock_code, newHold(t.stock_code));
+      applyTrade(map.get(t.stock_code), t);
+    }
+    return [...map.values()];
+  }
   const map = new Map();
   const baseByCode = new Map();
   for (const b of bases) {
+    if (code && b.stock_code !== code) continue;
     map.set(b.stock_code, newHold(b.stock_code, b));
     baseByCode.set(b.stock_code, b);
   }
-  for (const t of sortedTrades()) {
+  for (const t of [...trades].sort((a, b) => new Date(a.transaction_time) - new Date(b.transaction_time))) {
     const b = baseByCode.get(t.stock_code);
     /* 基线表示「截至基线日期收盘」：当天及更早的流水已含在基线里，跳过 */
     if (b && dayKeyOf(t.transaction_time) <= b.base_date) continue;
@@ -119,4 +130,39 @@ export function computePositions() {
     applyTrade(map.get(t.stock_code), t);
   }
   return [...map.values()];
+}
+
+/* ============================================================
+   v3.23.2 positions 表（持仓实体）的行映射与差异比较
+   positions 是「当前持仓」的持久化状态：每笔交易/基线变动后
+   增量 upsert（没有就 INSERT，有就 UPDATE），UI 与导出直接读表。
+   ============================================================ */
+
+/* holding → positions 表行（纯数据，无 id/owner_id/updated_at）。
+   cost_price：持仓股 = 摊薄成本；清仓股 = 清仓前最后一笔加权成本（保留参考）。 */
+export function positionRowOf(h) {
+  const lastAvg = h.timeline && h.timeline.length ? h.timeline[h.timeline.length - 1].avg : null;
+  return {
+    stock_code: h.code,
+    stock_name: h.name || '',
+    market: h.market || '',
+    qty: h.qty,
+    cost_price: h.qty > 0 ? h.dilutedValue / h.qty : lastAvg,
+    cost_value: h.costValue,
+    diluted_cost: h.dilutedValue,
+    realized: h.realized || 0,
+    realized_op: h.realizedOp || 0,
+    is_base: h.isBase ? 1 : 0,
+    base_date: h.baseDate || null
+  };
+}
+
+/* 现有表行 vs 目标行是否需要 UPDATE（忽略 id/owner_id/updated_at；浮点按 1e-8 容差） */
+export function positionNeedsUpdate(row, rec) {
+  const ne = (a, b) => (a == null ? 2 : 0) !== (b == null ? 2 : 0) || (a != null && Math.abs(Number(a) - Number(b)) > 1e-8);
+  return row.stock_name !== rec.stock_name || row.market !== rec.market
+    || ne(row.qty, rec.qty) || ne(row.cost_price, rec.cost_price)
+    || ne(row.cost_value, rec.cost_value) || ne(row.diluted_cost, rec.diluted_cost)
+    || ne(row.realized, rec.realized) || ne(row.realized_op, rec.realized_op)
+    || (!!row.is_base !== !!rec.is_base) || (row.base_date || null) !== rec.base_date;
 }
