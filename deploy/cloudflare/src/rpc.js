@@ -18,7 +18,7 @@ const TABLE_COLS = {
   settings: ['owner_id', 'key', 'value', 'updated_at'],
   op_logs: ['owner_id', 'action', 'summary', 'ref_table', 'created_at'],
   qa_history: ['owner_id', 'conversation_id', 'question', 'answer', 'created_at'],
-  positions: ['owner_id', 'stock_code', 'stock_name', 'market', 'qty', 'cost_price', 'cost_value', 'diluted_cost', 'realized', 'realized_op', 'is_base', 'base_date', 'updated_at'],
+  positions: ['owner_id', 'stock_code', 'stock_name', 'market', 'qty', 'cost_price', 'cost_value', 'diluted_cost', 'realized', 'realized_op', 'is_base', 'base_date', 'base_qty', 'base_cost', 'updated_at'],
 };
 const QUERY_TABLES = ['trades', 'watchlist', 'quotes', 'settings', 'op_logs', 'qa_history', 'positions'];
 const WRITE_TABLES = ['trades', 'watchlist', 'quotes', 'settings', 'op_logs', 'positions'];          // app_update/bulk 口径（PG 版就不含 qa_history）

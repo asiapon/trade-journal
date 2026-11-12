@@ -134,9 +134,16 @@ CREATE TABLE IF NOT EXISTS positions (
   realized_op numeric,
   is_base integer NOT NULL DEFAULT 0,
   base_date date,
+  base_qty numeric,
+  base_cost numeric,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_positions_owner_code ON positions(owner_id, stock_code);
+
+-- v3.23.3 基线快照列（is_base=1 行专用：「基线日期收盘」的数量/成本价，8 位小数；
+-- 行上的 qty/cost_price 是基线叠加后续流水后的当前值）。存量库幂等补列。
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS base_qty numeric;
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS base_cost numeric;
 
 DO $ DECLARE t text;
 BEGIN

@@ -128,6 +128,9 @@ CREATE INDEX IF NOT EXISTS idx_netlog_day ON net_log(day, id);
 -- v3.23.2 持仓表（当前持仓的持久化实体）：每笔交易/基线变动后由前端
 -- 增量 upsert（没有就 INSERT，有就 UPDATE）；UI 首屏与导出直接读表，
 -- 不再每次全量重放流水。qty=0 表示已清仓（清仓当日保留展示）。
+-- v3.23.3 base_qty/base_cost：基线快照（is_base=1 行专用）——「基线日期收盘」
+-- 的数量与成本价（最多 8 位小数）；行上的 qty/cost_price 是基线叠加后续
+-- 流水后的当前值，两层含义分开存。settings.pos_base 中转层退役。
 CREATE TABLE IF NOT EXISTS positions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   owner_id TEXT NOT NULL,
@@ -142,6 +145,13 @@ CREATE TABLE IF NOT EXISTS positions (
   realized_op REAL,
   is_base INTEGER NOT NULL DEFAULT 0,
   base_date TEXT,
+  base_qty REAL,
+  base_cost REAL,
   updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_positions_owner_code ON positions(owner_id, stock_code);
+
+-- v3.23.3 已建过库的存量补列（SQLite 的 ADD COLUMN 不支持 IF NOT EXISTS，
+-- 重复执行报 duplicate column name 属正常；放文件末尾保证前面的建表先落地）
+ALTER TABLE positions ADD COLUMN base_qty REAL;
+ALTER TABLE positions ADD COLUMN base_cost REAL;

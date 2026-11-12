@@ -53,9 +53,16 @@ export async function run() {
   /* ---------- 2. 远端建表 ---------- */
   step('远端建表（schema.d1.sql，幂等）');
   const r = wrangler(['d1', 'execute', DB_NAME, '--remote', '-y', '--file=schema.d1.sql']);
+  /* v3.23.3：schema 末尾的 ALTER TABLE ... ADD COLUMN（base_qty/base_cost）在
+     已补过列的库上会报 duplicate column name —— 属正常，建表部分在此之前已全部落地 */
   if (r.status !== 0) {
-    warn('建表返回非 0。若报「already exists」属正常（表已存在）');
-    info('其他错误请看上方输出');
+    const out = (r.stderr || r.stdout || '').toString();
+    if (/duplicate column/i.test(out)) {
+      ok('表结构已同步（positions 基线列已存在，跳过重复补列）');
+    } else {
+      warn('建表返回非 0。若报「already exists」属正常（表已存在）');
+      info('其他错误请看上方输出');
+    }
   } else {
     ok('表结构已同步');
   }

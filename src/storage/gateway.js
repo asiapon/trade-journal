@@ -211,7 +211,72 @@ export async function loadAll() {
     S.positions = []; S.positionsOk = false;
   }
   if (storageHooks.afterLoad) storageHooks.afterLoad();
+  /* v3.23.3 一次性迁移：settings.pos_base → positions.is_base 行
+     （base_qty/base_cost 写基线点快照）。只写基线字段，数量/成本等当前值
+     紧随其后的全量 syncPositions() 重算回填。迁移失败保留 pos_base 键，下次 boot 再试。 */
+  if (S.positionsOk && Array.isArray(S.settings.pos_base) && S.settings.pos_base.length) {
+    try {
+      await migratePosBase(S.settings.pos_base.filter(b => b && b.stock_code));
+      delete S.settings.pos_base;
+      const srow = S._settingRows && S._settingRows.pos_base;
+      if (srow) { try { await store.remove('settings', srow.id); } catch (e) { /* 键清理失败不影响 */ } delete S._settingRows.pos_base; }
+    } catch (e) { /* 迁移失败：保留 pos_base，下次 boot 重试 */ }
+  }
   if (S.positionsOk) await syncPositions();
+}
+
+/* settings.pos_base 条目 → positions 基线行（upsert 基线字段） */
+async function migratePosBase(legacy) {
+  const cur = Array.isArray(S.positions) ? S.positions : (S.positions = []);
+  const byCode = new Map(cur.map(r => [r.stock_code, r]));
+  for (const b of legacy) {
+    const qty = Number(b.qty) || 0, cost = Number(b.costPrice) || 0;
+    const patch = {
+      stock_code: b.stock_code, stock_name: b.stock_name || '', market: b.market || '',
+      is_base: 1, base_date: b.base_date || null, base_qty: qty, base_cost: cost
+    };
+    const row = byCode.get(b.stock_code);
+    if (row) { const saved = await store.update('positions', row.id, patch); Object.assign(row, saved); }
+    else { const saved = await store.insert('positions', patch); cur.push(saved); byCode.set(b.stock_code, saved); }
+  }
+}
+
+/* v3.23.3 保存持仓基线（「维护持仓」弹窗入口）：基线直接写 positions 表，
+   不再经 settings.pos_base 中转。
+   - 表单每行 → upsert is_base=1 行（base_qty/base_cost = 基线点快照）；
+   - 表单里删掉的旧基线 → 有流水恢复纯流水推导（is_base 清 0 后增量重算），
+     无流水整行删除；
+   - 最后对受影响股票增量 syncPositions，重算 qty/cost_price/realized 等当前值。 */
+export async function savePosBases(bases) {
+  const cur = Array.isArray(S.positions) ? S.positions : (S.positions = []);
+  const byCode = new Map(cur.map(r => [r.stock_code, r]));
+  const keep = new Set(bases.map(b => b.stock_code));
+  const affected = [];
+  for (const b of bases) {
+    const patch = {
+      stock_code: b.stock_code, stock_name: b.stock_name || '', market: b.market || '',
+      qty: b.qty, cost_price: b.costPrice, cost_value: b.qty * b.costPrice, diluted_cost: b.qty * b.costPrice,
+      realized: 0, realized_op: 0,
+      is_base: 1, base_date: b.base_date || null, base_qty: b.qty, base_cost: b.costPrice
+    };
+    const row = byCode.get(b.stock_code);
+    if (row) { const saved = await store.update('positions', row.id, patch); Object.assign(row, saved); }
+    else { const saved = await store.insert('positions', patch); cur.push(saved); byCode.set(b.stock_code, saved); }
+    affected.push(b.stock_code);
+  }
+  for (const r of [...cur]) {
+    if (!r.is_base || keep.has(r.stock_code)) continue;
+    const hasTrades = S.trades.some(t => t.stock_code === r.stock_code);
+    if (hasTrades) {
+      const saved = await store.update('positions', r.id, { is_base: 0, base_date: null, base_qty: null, base_cost: null });
+      Object.assign(r, saved);
+      affected.push(r.stock_code);
+    } else {
+      await store.remove('positions', r.id);
+      cur.splice(cur.indexOf(r), 1);
+    }
+  }
+  await syncPositions(affected);
 }
 
 /* v3.23.2 持仓表同步引擎：positions 是「当前持仓」的持久化实体——

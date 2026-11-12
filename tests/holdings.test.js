@@ -86,11 +86,23 @@ describe('computeHoldings 当日配对池（v3.22.1 跨股票隔离修复）', (
 
 /* ============================================================
    v3.23.0 持仓基线层 computePositions
+   v3.23.3 基线存储并入 positions 表（is_base=1 行 + base_qty/base_cost 快照），
+   settings.pos_base 仅作旧后端回退。
    ============================================================ */
 import { computePositions } from '../src/core/holdings.js';
 
-describe('computePositions 持仓基线层（v3.23.0）', () => {
-  beforeEach(() => { S.settings = {}; });
+/* positions 表基线行最小构造（is_base=1，base_qty/base_cost=基线点快照） */
+function baseRow(code, name, market, qty, cost, date) {
+  return {
+    id: 900 + qty, stock_code: code, stock_name: name, market,
+    qty, cost_price: cost, cost_value: qty * cost, diluted_cost: qty * cost,
+    realized: 0, realized_op: 0, is_base: 1, base_date: date,
+    base_qty: qty, base_cost: cost, updated_at: 'x'
+  };
+}
+
+describe('computePositions 持仓基线层', () => {
+  beforeEach(() => { S.settings = {}; S.positions = []; S.positionsOk = true; });
 
   it('无基线时与纯流水 computeHoldings 完全一致', () => {
     S.trades = [tr('buy', '600001', 10.00, 1000, '2026-11-01T10:00:00')];
@@ -101,15 +113,24 @@ describe('computePositions 持仓基线层（v3.23.0）', () => {
   });
 
   it('基线种子：数量+成本价（8 位小数精度完整保留）', () => {
-    S.settings = { pos_base: [{ stock_code: '600001', stock_name: '测试甲', market: 'sh', qty: 1000, costPrice: 5.71012345, base_date: '2026-11-10' }] };
+    S.positions = [baseRow('600001', '测试甲', 'sh', 1000, 5.71012345, '2026-11-10')];
     const h = computePositions().find(x => x.code === '600001');
     expect(h.qty).toBe(1000);
     expect(h.costValue / h.qty).toBeCloseTo(5.71012345, 10);   // 不做 2 位截断
     expect(h.isBase).toBe(true);
   });
 
-  it('基线日期当天及更早的流水被忽略，之后的流水自动叠加', () => {
+  it('旧后端回退：positionsOk=false 时仍读 settings.pos_base（v3.23.0 兼容）', () => {
+    S.positionsOk = false;
     S.settings = { pos_base: [{ stock_code: '600001', stock_name: '测试甲', market: 'sh', qty: 1000, costPrice: 5.71012345, base_date: '2026-11-10' }] };
+    const h = computePositions().find(x => x.code === '600001');
+    expect(h.qty).toBe(1000);
+    expect(h.costValue / h.qty).toBeCloseTo(5.71012345, 10);
+    expect(h.isBase).toBe(true);
+  });
+
+  it('基线日期当天及更早的流水被忽略，之后的流水自动叠加', () => {
+    S.positions = [baseRow('600001', '测试甲', 'sh', 1000, 5.71012345, '2026-11-10')];
     S.trades = [
       tr('buy', '600001', 99.00, 5000, '2026-11-09T10:00:00'),  // 基线前的历史流水：不参与
       tr('buy', '600001', 6.00, 500, '2026-11-11T10:00:00'),    // 基线后：加权叠加
@@ -125,7 +146,7 @@ describe('computePositions 持仓基线层（v3.23.0）', () => {
   });
 
   it('基线后全部卖出：qty 归零、盈亏落地；纯流水 computeHoldings 不受基线影响', () => {
-    S.settings = { pos_base: [{ stock_code: '600001', stock_name: '测试甲', market: 'sh', qty: 2000, costPrice: 5.10, base_date: '2026-11-10' }] };
+    S.positions = [baseRow('600001', '测试甲', 'sh', 2000, 5.10, '2026-11-10')];
     S.trades = [
       tr('buy', '600001', 5.00, 2000, '2026-11-01T10:00:00'),   // 基线前流水
       tr('sell', '600001', 5.20, 2000, '2026-11-11T14:00:00'),  // 基线后清仓
@@ -139,7 +160,7 @@ describe('computePositions 持仓基线层（v3.23.0）', () => {
   });
 
   it('只有基线、零流水的股票也出现在持仓里（名称/市场来自基线）', () => {
-    S.settings = { pos_base: [{ stock_code: '688111', stock_name: '新股', market: 'sh', qty: 200, costPrice: 88.88, base_date: '2026-11-11' }] };
+    S.positions = [baseRow('688111', '新股', 'sh', 200, 88.88, '2026-11-11')];
     S.trades = [];
     const h = computePositions().find(x => x.code === '688111');
     expect(h).toBeTruthy();
@@ -153,8 +174,8 @@ describe('computePositions 持仓基线层（v3.23.0）', () => {
    ============================================================ */
 import { positionRowOf, positionNeedsUpdate } from '../src/core/holdings.js';
 
-describe('positions 表同步（v3.23.2）', () => {
-  beforeEach(() => { S.settings = {}; });
+describe('positions 表同步（v3.23.2 / v3.23.3 基线快照）', () => {
+  beforeEach(() => { S.settings = {}; S.positions = []; S.positionsOk = true; });
 
   it('computePositions(code) 单股重放 = 全量结果里过滤出该股', () => {
     S.trades = [
@@ -187,7 +208,7 @@ describe('positions 表同步（v3.23.2）', () => {
   });
 
   it('positionNeedsUpdate：数量/成本/基线变化检出，容差内浮点忽略，id/时间戳不参与', () => {
-    const rec = { stock_code: '600001', stock_name: '甲', market: 'sh', qty: 1000, cost_price: 5.71, cost_value: 5710, diluted_cost: 5710, realized: 0, realized_op: 0, is_base: 0, base_date: null };
+    const rec = { stock_code: '600001', stock_name: '甲', market: 'sh', qty: 1000, cost_price: 5.71, cost_value: 5710, diluted_cost: 5710, realized: 0, realized_op: 0, is_base: 0, base_date: null, base_qty: null, base_cost: null };
     const row = { id: 7, owner_id: 'admin', updated_at: 'x', ...rec };
     expect(positionNeedsUpdate(row, rec)).toBe(false);          // 完全一致
     expect(positionNeedsUpdate({ ...row, qty: 999 }, rec)).toBe(true);
@@ -196,5 +217,27 @@ describe('positions 表同步（v3.23.2）', () => {
     expect(positionNeedsUpdate({ ...row, is_base: 1, base_date: '2026-11-10' }, rec)).toBe(true);
     expect(positionNeedsUpdate({ ...row, stock_name: '乙' }, rec)).toBe(true);
     expect(positionNeedsUpdate({ ...row, updated_at: 'y' }, rec)).toBe(false);
+    // v3.23.3 基线快照列参与比较：改 base_qty/base_cost 必须检出
+    expect(positionNeedsUpdate({ ...row, base_qty: 2000 }, rec)).toBe(true);
+    expect(positionNeedsUpdate({ ...row, base_cost: 5.72 }, rec)).toBe(true);
+  });
+
+  it('基线行回环稳定：computePositions → positionRowOf 与表内行一致，不产生无谓 UPDATE', () => {
+    S.positions = [baseRow('000063', '中兴通讯', 'sz', 13500, 48.04371926, '2026-01-01')];
+    S.trades = [];
+    const h = computePositions('000063')[0];
+    const rec = positionRowOf(h);
+    expect(rec.is_base).toBe(1);
+    expect(rec.base_qty).toBe(13500);
+    expect(rec.base_cost).toBeCloseTo(48.04371926, 10);
+    expect(rec.cost_price).toBeCloseTo(48.04371926, 10);   // 基线点：摊薄成本 = 基线成本
+    expect(positionNeedsUpdate(baseRow('000063', '中兴通讯', 'sz', 13500, 48.04371926, '2026-01-01'), rec)).toBe(false);
+    // 基线后加一笔买入：基线快照不变、当前值变化 → 检出需要 UPDATE
+    S.trades = [tr('buy', '000063', 50.00, 100, '2026-02-01T10:00:00')];
+    const h2 = computePositions('000063')[0];
+    const rec2 = positionRowOf(h2);
+    expect(rec2.base_qty).toBe(13500);                     // 快照不被流水污染
+    expect(rec2.qty).toBe(13600);
+    expect(positionNeedsUpdate(baseRow('000063', '中兴通讯', 'sz', 13500, 48.04371926, '2026-01-01'), rec2)).toBe(true);
   });
 });

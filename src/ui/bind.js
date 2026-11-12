@@ -4,14 +4,14 @@ import { NetLog, sjTokenHeaders } from '../core/netlog.js';
 import { StockDict } from '../core/stockdict.js';
 import { DL } from '../core/data-layer.js';
 import { emQuote, txQuote } from '../sources/quotes.js';
-import { ACCESS_KEY, BACKEND_URL, CLOUD_HOST, RPC_BASE, TABLES, cloudStore, loadAll, localStore, rpc, saveSetting, sessionHooks, setStore, storageHooks, store, setupAdmin, changePassword, syncPositions } from '../storage/gateway.js';
+import { ACCESS_KEY, BACKEND_URL, CLOUD_HOST, RPC_BASE, TABLES, cloudStore, loadAll, localStore, rpc, saveSetting, savePosBases, sessionHooks, setStore, storageHooks, store, setupAdmin, changePassword } from '../storage/gateway.js';
 import { S } from '../core/app-state.js';
 import { U } from '../core/ui-state.js';
 import { renderAll } from '../app.js';
 import { doLogin, doLogout, switchAuthForm, authMsg, Auth } from '../features/auth.js';
 import { renderAnalysisSelect } from '../features/diagnose.js';
 import { aiParseEntry, autoWatchOnBuy, buildTradeRow, calcFees, closeRecModal, feeDetailRow, fillFormFromParsed, fillTradeForm, isInitTrade, openRecModal, pendingTrades, quoteMap, reconcileParsedCode, renderTrades, resetTradeForm, resolveTfStock, setManualOpen, setTfStock, syncTfTypeTabs, updateFeePreview } from '../features/journal.js';
-import { computePositions } from '../core/holdings.js';
+import { computePositions, posBases } from '../core/holdings.js';
 import { loadUsers, renderFeeEditor, renderMe, renderNetLogUI, saveFeeEditor, switchSetPane } from '../features/me.js';
 import { HOLD_MOUNTS, WATCH_MOUNTS, feeOpenIds, renderHoldings, renderToday, stockDetailRow, stockOpenCodes } from '../features/overview.js';
 import { qaSyncSendState, renderQaHistory, renderQaMessages } from '../features/qa.js';
@@ -167,7 +167,7 @@ export function bindEvents() {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('watchModal').hidden) closeWatchModal(); });
   }
 
-  /* ---------- v3.23.0 持仓基线维护 ---------- */
+  /* ---------- v3.23.0 持仓基线维护（v3.23.3 起基线直接存 positions 表 is_base 行） ---------- */
   function posBaseRowHtml(b) {
     const today = nowLocalInput().slice(0, 10);
     const mkt = b.market || '';
@@ -186,8 +186,8 @@ export function bindEvents() {
     </tr>`;
   }
   function renderPosBaseRows() {
-    const bases = Array.isArray(S.settings.pos_base) ? S.settings.pos_base : [];
-    $('posBaseTable').querySelector('tbody').innerHTML = bases.map(posBaseRowHtml).join('');
+    /* v3.23.3 基线列表 = positions 表的 is_base 行（posBases() 已映射为 {qty, costPrice}） */
+    $('posBaseTable').querySelector('tbody').innerHTML = posBases().map(posBaseRowHtml).join('');
   }
   function closePosBaseModal() { $('posBaseModal').hidden = true; }
   if ($('posBaseBtn')) {
@@ -234,9 +234,8 @@ export function bindEvents() {
       }
       const clean = rows.map(r => ({ stock_code: r.stock_code, stock_name: r.stock_name, market: r.market, qty: Number(r.qtyRaw), costPrice: Number(r.costRaw), base_date: r.base_date }));
       try {
-        await saveSetting('pos_base', clean);
-        /* v3.23.2 基线变动 → 持仓表同步刷新（受影响的股票增量 upsert） */
-        await syncPositions(clean.map(r => r.stock_code));
+        /* v3.23.3 基线直接写 positions 表（is_base 行）：upsert/清退/增量重算一体完成 */
+        await savePosBases(clean);
         toast(clean.length ? `已保存 ${clean.length} 条持仓基线` : '已清空基线，恢复纯流水推导');
         closePosBaseModal();
         renderHoldings(); renderToday();
@@ -889,8 +888,10 @@ export function bindEvents() {
   /* 我的：数据管理 */
   $('exportBtn').addEventListener('click', () => {
     /* v3.23.2 holdings = positions 表的真实数据（当前持仓的持久化实体）。
-       导入时不直接回写本段——持仓由 trades + settings.pos_base 重新推导后
-       同步入表，保证永远与流水一致；本段用于人看与迁移核对。 */
+       导入时不直接回写本段——持仓由 trades + positions.is_base 基线重新推导后
+       同步入表，保证永远与流水一致；本段用于人看与迁移核对。
+       v3.23.3 基线快照（base_qty/base_cost）随行导出，settings.pos_base 已退役
+       不再出现在导出里。 */
     let holdingsSnap;
     if (S.positionsOk && Array.isArray(S.positions)) {
       holdingsSnap = S.positions.map(r => ({
@@ -898,7 +899,10 @@ export function bindEvents() {
         qty: r.qty,
         cost_price: r.cost_price != null ? Number(Number(r.cost_price).toFixed(8)) : null,
         diluted_cost: r.diluted_cost, realized: r.realized, realized_op: r.realized_op,
-        is_base: !!r.is_base, base_date: r.base_date, updated_at: r.updated_at
+        is_base: !!r.is_base, base_date: r.base_date,
+        base_qty: r.base_qty != null ? r.base_qty : null,
+        base_cost: r.base_cost != null ? Number(Number(r.base_cost).toFixed(8)) : null,
+        updated_at: r.updated_at
       }));
     } else {
       holdingsSnap = computePositions().map(h => ({
@@ -906,7 +910,9 @@ export function bindEvents() {
         qty: h.qty,
         cost_price: h.qty > 0 ? Number((h.costValue / h.qty).toFixed(8)) : null,
         diluted_cost: h.dilutedValue, realized: h.realized, realized_op: h.realizedOp,
-        is_base: !!h.isBase, base_date: h.baseDate || null, updated_at: null
+        is_base: !!h.isBase, base_date: h.baseDate || null,
+        base_qty: h.isBase ? h.baseQty : null, base_cost: h.isBase ? h.baseCost : null,
+        updated_at: null
       }));
     }
     const data = {
@@ -938,11 +944,15 @@ export function bindEvents() {
             await store.bulkInsert('trades', strip(data.trades));
             await store.bulkInsert('watchlist', strip(data.watchlist));
             await store.bulkInsert('quotes', strip(data.quotes));
-            /* v3.23.1 设置全量恢复（此前只恢复 fee，会丢掉持仓基线/模型配置） */
+            /* v3.23.1 设置全量恢复（此前只恢复 fee，会丢掉基线/模型配置）。
+               v3.23.3 旧备份里的 settings.pos_base 恢复后由 loadAll 自动迁移进
+               positions 表（is_base 行）并删键，新备份已无此键。 */
             if (data.settings && typeof data.settings === 'object') {
               for (const [k, v] of Object.entries(data.settings)) await saveSetting(k, v);
             }
-            const nBase = Array.isArray(data.settings && data.settings.pos_base) ? data.settings.pos_base.length : 0;
+            const nBase = Array.isArray(data.holdings)
+              ? data.holdings.filter(h => h && h.is_base).length
+              : (Array.isArray(data.settings && data.settings.pos_base) ? data.settings.pos_base.length : 0);
             await store.log('import', `导入备份：交易 ${data.trades.length} 条、自选 ${data.watchlist.length} 条、基线 ${nBase} 条`);
             await loadAll(); renderAll();
             toast('导入完成');
